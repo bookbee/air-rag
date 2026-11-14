@@ -15,7 +15,12 @@ from air_rag.constants import SCOPE_ADMIN_READ
 from air_rag.observability import metrics
 from air_rag.schemas.common import CapabilitiesResponse, HealthResponse, Principal, ReadyResponse
 
-__all__ = ["build_metrics_router", "router"]
+__all__ = ["EMPTY_INDEX_WARNING", "build_metrics_router", "router"]
+
+EMPTY_INDEX_WARNING = (
+    "index is empty: every retrieval returns no citations (was the service started "
+    "without ingestion.seed_dir?)"
+)
 
 router = APIRouter(tags=["system"])
 
@@ -49,12 +54,16 @@ async def ready(
     ready_now = bool(gateway.reachable)
     if not ready_now:
         response.status_code = HTTP_503_SERVICE_UNAVAILABLE
+    document_count = len(state.store)
+    warnings = [EMPTY_INDEX_WARNING] if document_count == 0 else []
     return ReadyResponse(
         ready=ready_now,
         service=state.settings.obs.service_name,
         version=__version__,
         checked_at=datetime.now(UTC),
         dependencies=[gateway],
+        document_count=document_count,
+        warnings=warnings,
     )
 
 

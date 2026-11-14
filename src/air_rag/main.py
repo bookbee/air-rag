@@ -60,6 +60,12 @@ def _build_lifespan(state: AppState) -> Any:
                 model_gateway=state.model_gateway,
                 store=state.store,
             )
+        if len(state.store) == 0:
+            _log.warning(
+                "startup.empty_index",
+                seed_dir=str(ingestion.seed_dir) if ingestion.seed_dir else None,
+                detail="every retrieval will return no citations",
+            )
         _log.info(
             "startup.complete",
             version=__version__,
