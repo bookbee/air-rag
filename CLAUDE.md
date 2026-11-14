@@ -19,7 +19,8 @@ make lint | fmt | typecheck | test
 make openapi      # write docs/openapi.json from create_app()
 make run-sit      # run seeded from sit/corpus (AIR_RAG__INGESTION__SEED_DIR)
 make sit-check    # scripts/sit_check.py: sit/queries.json against a seeded :8087
-make up / down / logs / status   # docker compose; container reaches air-model-gateway at host.docker.internal:8083
+make up / down / logs / status   # docker on the shared air-net as http://air-rag:8080 (needs ../air-infrastructure-service up;
+                                 # INFRA=none for its own network); reaches the gateway at host.docker.internal:8083
 ```
 
 Single test: `.venv/bin/pytest tests/unit/test_retrieval_route.py::test_retrieve_requires_a_key`. pytest is configured with `asyncio_mode = "auto"` and `pythonpath = ["src"]`, so async tests need no decorator.

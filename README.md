@@ -97,6 +97,23 @@ make sit-check     # sit/queries.json: expected top-3 hit per query, plus no
 AIR_RAG_SEED_DIR=/app/sit/corpus make up    # the same, in docker (corpus is mounted)
 ```
 
+## Docker and the shared network
+
+`make up` runs the container on the platform's shared `air-net` network
+(created by `../air-infrastructure-service`'s `make up`), where sibling
+containers reach it as **`http://air-rag:8080`**. From the host it's still
+`localhost:8087`. air-model-gateway is never on air-net, so the container
+reaches it at `host.docker.internal:8083`.
+
+```bash
+cd ../air-infrastructure-service && make up   # air-net (make up fails early without it)
+cd ../air-model-gateway && make up            # embeddings
+make up                                       # air-rag on air-net
+AIR_RAG_SEED_DIR=/app/sit/corpus make up      # ...seeded with the SIT corpus
+make up INFRA=none                            # own network instead (docker-compose.standalone.yml)
+make status | logs | down
+```
+
 If the gateway can't embed at boot, seeding stops with a `seed.failed` log
 line and the service still starts. `/v1/capabilities`' `document_count`
 shows how many chunks made it in.

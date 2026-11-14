@@ -120,8 +120,9 @@ up: $(UP_DEPS) ## Start in docker on air-net (INFRA=none: own network; AIR_RAG_S
 
 .PHONY: status
 status: ## Report this service's own readiness
-	@sleep 2
-	@printf 'air-rag: http://localhost:$(PORT)/v1/health\n'
+	@printf 'air-rag: http://localhost:$(PORT)/v1/health (on air-net as http://air-rag:8080)\n'
+	@# Startup seeding can take a while; wait for the process to answer at all.
+	@for i in $$(seq 1 60); do curl -sf -m 1 -o /dev/null http://localhost:$(PORT)/v1/health && break; sleep 1; done
 	@code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$(PORT)/v1/ready 2>/dev/null); \
 	if [ "$$code" = "200" ]; then \
 		printf 'ready:   yes — air-model-gateway serving the embedding model\n'; \
