@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Accepted payment methods
 uri: https://help.brightcart.example/payments
 kind: policy

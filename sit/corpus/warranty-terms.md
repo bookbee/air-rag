@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Warranty terms for electronics and appliances
 uri: https://help.brightcart.example/warranty
 kind: policy

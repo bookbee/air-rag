@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Cancelling an order
 uri: https://help.brightcart.example/cancel
 kind: policy

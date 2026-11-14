@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Click and collect store pickup
 uri: https://help.brightcart.example/pickup
 kind: policy

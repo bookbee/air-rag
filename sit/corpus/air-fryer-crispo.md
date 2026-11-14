@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Crispo 4.5 L digital air fryer
 uri: https://shop.brightcart.example/p/crispo-airfryer-45
 kind: product

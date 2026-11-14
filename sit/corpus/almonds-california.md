@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: California Almonds, 500 g
 uri: https://shop.brightcart.example/p/california-almonds-500
 kind: product

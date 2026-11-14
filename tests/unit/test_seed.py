@@ -18,6 +18,7 @@ from air_rag.main import create_app
 from air_rag.retrieval.memory import InMemoryVectorStore
 from tests.conftest import GATEWAY_BASE_URL, embed_response, vector
 
+_TENANTED = "---\ntenant: t1\n---\n"
 _SIT_CORPUS = Path(__file__).resolve().parents[2] / "sit" / "corpus"
 
 
@@ -64,8 +65,8 @@ def test_loader_rejects_a_missing_directory(tmp_path: Path) -> None:
 
 
 async def test_seed_store_ingests_every_document_with_its_metadata(tmp_path: Path) -> None:
-    (tmp_path / "doc.md").write_text("---\ntitle: T\n---\n" + "x" * 250)
-    (tmp_path / "empty.md").write_text("---\ntitle: E\n---\n")
+    (tmp_path / "doc.md").write_text("---\ntenant: t1\ntitle: T\n---\n" + "x" * 250)
+    (tmp_path / "empty.md").write_text("---\ntenant: t1\ntitle: E\n---\n")
     store = InMemoryVectorStore()
 
     stored = await seed_store(
@@ -76,15 +77,16 @@ async def test_seed_store_ingests_every_document_with_its_metadata(tmp_path: Pat
     )
 
     assert stored == 3
-    [hit] = await store.search([1.0, 0.0], top_k=1)
+    [hit] = await store.search([1.0, 0.0], top_k=1, where={})
     assert hit.metadata["title"] == "T"
     assert hit.metadata["source_id"] == "doc"
+    assert (hit.metadata["tenant"], hit.metadata["status"]) == ("t1", "active")
 
 
 async def test_seed_store_stops_on_a_gateway_failure_without_raising(tmp_path: Path) -> None:
-    (tmp_path / "a.md").write_text("fine")
-    (tmp_path / "b.md").write_text("explode")
-    (tmp_path / "c.md").write_text("never reached")
+    (tmp_path / "a.md").write_text(_TENANTED + "fine")
+    (tmp_path / "b.md").write_text(_TENANTED + "explode")
+    (tmp_path / "c.md").write_text(_TENANTED + "never reached")
     store = InMemoryVectorStore()
 
     stored = await seed_store(
@@ -103,6 +105,9 @@ def test_the_sit_corpus_is_well_formed() -> None:
 
     assert len(docs) >= 25
     assert all(d.metadata.get("title") and d.metadata.get("uri") for d in docs)
+    tenants = {d.metadata.get("tenant") for d in docs}
+    assert {"brightcart", "acme", None} <= tenants, "tenant isolation edge cases are missing"
+    assert any(d.metadata.get("status") == "archived" for d in docs)
     assert all(d.metadata["uri"].startswith("https://") for d in docs)
     assert any(not d.text.strip() for d in docs), "the empty-document edge case is missing"
     assert any(len(d.text) > 800 for d in docs), "the multi-chunk edge case is missing"
@@ -119,7 +124,7 @@ def test_every_sit_query_expects_a_document_that_exists() -> None:
 async def test_the_app_seeds_at_startup_when_seed_dir_is_set(
     settings: Settings, tmp_path: Path
 ) -> None:
-    (tmp_path / "doc.md").write_text("---\ntitle: T\n---\nhello")
+    (tmp_path / "doc.md").write_text("---\ntenant: brightcart\ntitle: T\n---\nhello")
 
     def answer(request: httpx.Request) -> httpx.Response:
         texts = json.loads(request.content)["input"]
@@ -139,3 +144,41 @@ def test_a_blank_seed_dir_means_no_seeding() -> None:
     settings = Settings.model_validate({"app": {"env": "test"}, "ingestion": {"seed_dir": ""}})
 
     assert settings.ingestion.seed_dir is None
+
+
+@pytest.mark.parametrize(
+    "front_matter",
+    ["title: no tenant", "tenant: Not A Slug", "tenant: t1\nstatus: deleted"],
+)
+async def test_seed_store_skips_documents_without_a_valid_tenant_or_status(
+    tmp_path: Path, front_matter: str
+) -> None:
+    (tmp_path / "bad.md").write_text(f"---\n{front_matter}\n---\nbody")
+    (tmp_path / "good.md").write_text(_TENANTED + "body")
+    store = InMemoryVectorStore()
+
+    stored = await seed_store(
+        tmp_path,
+        chunker=FixedSizeChunker(),
+        model_gateway=_FakeGateway(),  # type: ignore[arg-type]
+        store=store,
+    )
+
+    assert stored == 1
+    [hit] = await store.search([1.0, 0.0], top_k=5, where={})
+    assert hit.source_id == "good#0"
+
+
+async def test_seeded_archived_documents_are_indexed_with_their_status(tmp_path: Path) -> None:
+    (tmp_path / "old.md").write_text("---\ntenant: t1\nstatus: archived\n---\nold")
+    store = InMemoryVectorStore()
+
+    await seed_store(
+        tmp_path,
+        chunker=FixedSizeChunker(),
+        model_gateway=_FakeGateway(),  # type: ignore[arg-type]
+        store=store,
+    )
+
+    [hit] = await store.search([1.0, 0.0], top_k=1, where={})
+    assert hit.metadata["status"] == "archived"

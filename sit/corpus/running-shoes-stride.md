@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Stride Lite men's running shoes
 uri: https://shop.brightcart.example/p/stride-lite-run
 kind: product

@@ -44,6 +44,7 @@ agent that needs a lookup.
 | --- | --- | --- |
 | Vector store | In-process (Phase 0), `VectorStore` Protocol (any backend, later) | Same trade-off air-platform's in-memory session store makes; correct for a laptop and tests |
 | Caller shape | One endpoint, two callers (air-platform, air-tools' agents) | Confirmed with the user: agent reasoning lives in air-tools, and a RAG-backed agent calls air-rag the same way air-platform does |
+| Tenancy | The tenant comes from the API key record (required); retrieval filters on it, and a body `tenant` is a 422; archived documents are never returned | Callers can't choose or spoof a tenant; fail closed, with no default tenant. Decided 2026-11-14 so air-orchestrator-service can enable air-rag on multi-tenant deployments |
 | Auth | `X-API-Key`, salted-sha256, scopes — no channel concept | Same reasoning as air-tools: one caller shape, not air-platform's customer/business split |
 | Language / runtime | Python 3.12, FastAPI, Pydantic v2 | Matches every other AIR service |
 | Port | **8087** | air-infra/README.md's port map (bumped from 8083 once the model gateway claimed that slot) |
@@ -66,7 +67,7 @@ the model), and an ingestion route or job to drive it.
 ### Phase 2 — A real backend
 
 Replace `InMemoryVectorStore` with a persisted backend behind the same
-`VectorStore` Protocol; multi-tenant namespacing on every key, matching
-air-platform's tenant-scoping discipline.
+`VectorStore` Protocol, which must honour the `where` filter that tenant
+isolation (decided in Phase 0) rests on.
 
 Full HLD/LLD are deferred until Phase 1 has real documents to design against.

@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: EMI and pay later
 uri: https://help.brightcart.example/emi
 kind: policy

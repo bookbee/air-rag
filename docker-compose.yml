@@ -36,7 +36,7 @@ services:
       AIR_RAG__SECURITY__API_KEYS_INLINE: >-
         [{"id":"local-dev","name":"Local development",
         "key_hash":"793c2ca4f19409e8a6e26791b2a933d9ee89caa71449eb157691f8735454b082",
-        "scopes":["retrieval:read","admin:read"]}]
+        "tenant":"brightcart","scopes":["retrieval:read","admin:read"]}]
       AIR_RAG__SECURITY__ALLOW_UNAUTHENTICATED: "false"
       # SIT: `AIR_RAG_SEED_DIR=/app/sit/corpus make up` ingests the mounted
       # corpus at boot. Unset (the default) leaves the index empty.

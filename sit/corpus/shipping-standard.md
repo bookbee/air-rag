@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Standard delivery
 uri: https://help.brightcart.example/shipping
 kind: policy

@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: International shipping
 uri: https://help.brightcart.example/international
 kind: policy

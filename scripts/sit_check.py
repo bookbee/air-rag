@@ -17,6 +17,8 @@ from typing import Any
 import httpx
 
 _ROOT = Path(__file__).resolve().parent.parent
+#: Other-tenant and untenanted documents in sit/corpus: never a valid citation.
+_NEVER_RETURNED = frozenset({"acme-returns", "draft-no-tenant"})
 
 
 def _source(citation: dict[str, Any]) -> str:
@@ -27,6 +29,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base-url", default="http://localhost:8087")
     parser.add_argument("--key", default="airr_local_dev_key")
+    parser.add_argument("--tenant", default="brightcart", help="the key's tenant")
     parser.add_argument("--queries", type=Path, default=_ROOT / "sit" / "queries.json")
     args = parser.parse_args()
 
@@ -53,6 +56,17 @@ def main() -> int:
                 sys.stdout.write(f"FAIL [{i:02d}] HTTP {response.status_code}: {case['query']}\n")
                 continue
             citations = response.json()["citations"]
+            leaks = [
+                c["source_id"]
+                for c in citations
+                if c.get("metadata", {}).get("tenant") != args.tenant
+                or c.get("metadata", {}).get("status") != "active"
+                or _source(c) in _NEVER_RETURNED
+            ]
+            if leaks:
+                failures += 1
+                sys.stdout.write(f"FAIL [{i:02d}] isolation leak {leaks}: {case['query']}\n")
+                continue
             ranked = [_source(c) for c in citations]
             rank = ranked.index(case["expect"]) + 1 if case["expect"] in ranked[:within] else None
             top_ok = not ranked or ranked[0] != case.get("forbid_top")
@@ -63,8 +77,7 @@ def main() -> int:
             gaps += not ok and known_gap
             top = f"{ranked[0]} ({citations[0]['score']:.3f})" if citations else "-"
             sys.stdout.write(
-                f"{label} [{i:02d}] rank={rank or '-':<2} "
-                f"top={top:<40} {case['query']}\n"
+                f"{label} [{i:02d}] rank={rank or '-':<2} top={top:<40} {case['query']}\n"
             )
 
     passed = len(cases) - failures - gaps

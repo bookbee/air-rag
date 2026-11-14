@@ -17,6 +17,8 @@ class Principal(BaseModel):
 
     key_id: str
     name: str
+    #: The only tenant this caller's retrievals search.
+    tenant: str
     scopes: frozenset[str] = frozenset()
 
     def has_scope(self, scope: str) -> bool:
@@ -56,4 +58,7 @@ class CapabilitiesResponse(BaseModel):
     #: In-process in Phase 0 (retrieval/memory.py) — always `memory` until a
     #: real backend lands.
     vector_store_backend: str
+    #: Chunks across every tenant (this route needs `admin:read`).
     document_count: int
+    #: The calling key's tenant.
+    tenant: str

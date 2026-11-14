@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Royal Aged Basmati Rice, 5 kg
 uri: https://shop.brightcart.example/p/royal-basmati-5kg
 kind: product

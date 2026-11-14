@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any, Protocol
 
 from air_rag.clients.model_gateway import ModelGatewayClient
+from air_rag.constants import META_STATUS, META_TENANT, DocumentStatus
 from air_rag.retrieval.base import VectorStore
 
 
@@ -37,14 +38,19 @@ class FixedSizeChunker:
 async def ingest_document(
     *,
     source_id: str,
+    tenant: str,
     text: str,
     metadata: dict[str, Any],
+    status: DocumentStatus = DocumentStatus.ACTIVE,
     chunker: Chunker,
     model_gateway: ModelGatewayClient,
     store: VectorStore,
 ) -> int:
     """Chunk, embed and index one document. Returns the chunk count actually
-    stored — `0` for an empty document is a normal outcome, not an error."""
+    stored — `0` for an empty document is a normal outcome, not an error.
+
+    `tenant` and `status` are explicit, never read from `metadata`, and are
+    written last so caller metadata can't override what retrieval filters on."""
     chunks = chunker.chunk(text)
     if not chunks:
         return 0
@@ -59,6 +65,8 @@ async def ingest_document(
                 "source_id": source_id,
                 # Which embedding space this vector lives in: a model change is a re-index.
                 "embedding_model": result.embedding_model,
+                META_TENANT: tenant,
+                META_STATUS: str(status),
             },
         )
     return min(len(chunks), len(result.embeddings))

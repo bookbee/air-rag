@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Sparkle Matic liquid detergent, 2 L
 uri: https://shop.brightcart.example/p/sparkle-matic-2l
 kind: product

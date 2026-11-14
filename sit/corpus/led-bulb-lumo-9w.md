@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Lumo 9 W LED bulb, pack of 4
 uri: https://shop.brightcart.example/p/lumo-led-9w-4
 kind: product

@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Gift cards
 uri: https://help.brightcart.example/gift-cards
 kind: policy

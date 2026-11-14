@@ -54,7 +54,7 @@ async def require_principal(
 
     principal = record.to_principal()
     request.state.__setattr__(KEY_ID_ATTR, principal.key_id)
-    bind_request_context(key_id=principal.key_id)
+    bind_request_context(key_id=principal.key_id, tenant=principal.tenant)
     return principal
 
 

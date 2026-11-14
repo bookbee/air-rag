@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Veloce 750 W mixer grinder
 uri: https://shop.brightcart.example/p/veloce-mixer-750
 kind: product

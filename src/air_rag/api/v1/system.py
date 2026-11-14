@@ -76,6 +76,7 @@ async def capabilities(
         env=settings.app.env,
         vector_store_backend="memory",
         document_count=len(state.store),
+        tenant=principal.tenant,
     )
 
 

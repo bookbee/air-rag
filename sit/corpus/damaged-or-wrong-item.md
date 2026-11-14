@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Damaged, defective or wrong item received
 uri: https://help.brightcart.example/damaged
 kind: policy

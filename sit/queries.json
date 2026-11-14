@@ -1,5 +1,5 @@
 {
-  "_comment": "SIT query set for sit/corpus. Each case passes when a chunk of `expect` is within the top `within` citations (default 3). `forbid_top` is a source that must NOT be the #1 hit. `known_gap` cases are reported as GAP and do not fail the run; flip them off once the gap is fixed.",
+  "_comment": "SIT query set for sit/corpus. Each case passes when a chunk of `expect` is within the top `within` citations (default 3). `forbid_top` is a source that must NOT be the #1 hit. `known_gap` cases are reported as GAP and do not fail the run. On every response, sit_check also asserts that each citation has metadata.tenant == --tenant (default brightcart), has status active, and comes from neither acme-returns nor draft-no-tenant.",
   "cases": [
     {"query": "how many days do I have to return something", "expect": "returns-refunds"},
     {"query": "when will my refund reach my card", "expect": "returns-refunds"},
@@ -27,7 +27,11 @@
     {"query": "insulated cup for tea", "expect": "tumbler-chai-cafe"},
     {"query": "चाय कैफ़े", "expect": "tumbler-chai-cafe", "within": 5},
     {"query": "bright LED light bulbs", "expect": "led-bulb-lumo-9w"},
-    {"query": "current return window", "expect": "returns-refunds", "forbid_top": "returns-refunds-2024", "known_gap": true,
-     "_note": "Near-duplicate edge case: the archived 2024 policy must not outrank the current one. Measured 2026-11-14 with local-768-v1: the archived doc ranks #1 (0.545), current #2. Retrieval has no status/recency filter yet."}
+    {"query": "return within 7 days in store with receipt, store credit", "expect": "returns-refunds",
+     "_note": "Tenant isolation: worded like acme-returns, which belongs to tenant acme and must never be returned to a brightcart key."},
+    {"query": "returns in December until 31 January holiday", "expect": "returns-refunds", "within": 5,
+     "_note": "draft-no-tenant has no tenant, so seeding skips it."},
+    {"query": "current return window", "expect": "returns-refunds", "forbid_top": "returns-refunds-2024",
+     "_note": "Near-duplicate edge case: the archived 2024 policy must not outrank the current one. The 2024 doc is `status: archived`, so retrieval must exclude it (before that change it ranked #1 at 0.545)."}
   ]
 }

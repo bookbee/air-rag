@@ -5,10 +5,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RetrievalRequest(BaseModel):
+    #: Unknown fields are a 422, so a caller sending e.g. `tenant` learns
+    #: it isn't honoured instead of silently searching its key's tenant.
+    model_config = ConfigDict(extra="forbid")
+
     query: str = Field(min_length=1, max_length=4000)
     top_k: int = Field(default=5, ge=1, le=50)
     #: Tenant/user scoping for a future multi-tenant index — accepted now so

@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Percale cotton king bedsheet set
 uri: https://shop.brightcart.example/p/percale-king-sheet
 kind: product

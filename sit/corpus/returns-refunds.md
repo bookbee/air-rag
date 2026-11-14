@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Returns and refunds
 uri: https://help.brightcart.example/returns
 kind: policy

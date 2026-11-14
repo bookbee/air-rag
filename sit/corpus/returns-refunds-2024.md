@@ -1,4 +1,6 @@
 ---
+tenant: brightcart
+status: archived
 title: Returns and refunds (archived 2024 version)
 uri: https://help.brightcart.example/archive/2024/returns
 kind: policy

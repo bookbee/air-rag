@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Brightcart Plus loyalty programme
 uri: https://help.brightcart.example/plus
 kind: policy

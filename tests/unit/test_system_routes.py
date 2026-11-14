@@ -6,7 +6,7 @@ import httpx
 import pytest
 from fastapi import FastAPI
 
-from tests.conftest import DEV_KEY, NO_SCOPE_KEY, auth
+from tests.conftest import DEV_KEY, NO_SCOPE_KEY, TENANT, auth
 
 
 async def test_health_needs_no_auth_and_no_dependencies(client: httpx.AsyncClient) -> None:
@@ -66,3 +66,10 @@ async def test_metrics_exposes_the_prometheus_payload(client: httpx.AsyncClient)
 
 async def test_metrics_is_absent_from_the_openapi_document(app: FastAPI) -> None:
     assert "/metrics" not in app.openapi()["paths"]
+
+
+async def test_capabilities_reports_the_callers_tenant(client: httpx.AsyncClient) -> None:
+    response = await client.get("/v1/capabilities", headers=auth(DEV_KEY))
+
+    assert response.status_code == httpx.codes.OK
+    assert response.json()["tenant"] == TENANT

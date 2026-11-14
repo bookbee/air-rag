@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Privacy summary
 uri: https://help.brightcart.example/privacy
 kind: policy

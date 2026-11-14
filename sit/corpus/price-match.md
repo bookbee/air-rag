@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Price match promise
 uri: https://help.brightcart.example/price-match
 kind: policy

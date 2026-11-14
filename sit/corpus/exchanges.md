@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Exchanges and size swaps
 uri: https://help.brightcart.example/exchanges
 kind: policy

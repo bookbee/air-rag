@@ -14,6 +14,8 @@ from typing import Literal, Self
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from air_rag.constants import TENANT_PATTERN
+
 # ── Application ───────────────────────────────────────────────────────────────
 
 
@@ -88,6 +90,9 @@ class SecuritySettings(BaseModel):
     api_keys_inline: str | None = None
     api_keys_file: Path | None = None
     allow_unauthenticated: bool = False
+    #: The tenant an unauthenticated caller searches; required when
+    #: `allow_unauthenticated` is on — there is no cross-tenant fallback.
+    anonymous_tenant: str | None = Field(default=None, pattern=TENANT_PATTERN)
     hash_salt: SecretStr = SecretStr("air-rag-dev-salt")
     default_rate_limit_rpm: int = Field(default=120, ge=1)
     default_burst: int = Field(default=20, ge=1)
@@ -129,6 +134,10 @@ class Settings(BaseSettings):
         if self.app.is_production and self.security.allow_unauthenticated:
             raise ValueError(
                 "security.allow_unauthenticated must be false when app.env is production"
+            )
+        if self.security.allow_unauthenticated and self.security.anonymous_tenant is None:
+            raise ValueError(
+                "security.anonymous_tenant is required when security.allow_unauthenticated is true"
             )
         return self
 

@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Express and same-day delivery
 uri: https://help.brightcart.example/express
 kind: policy

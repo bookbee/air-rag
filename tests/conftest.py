@@ -29,6 +29,8 @@ EMBED_MODEL = "local-768-v1"
 EMBED_DIMS = 768
 DEV_KEY = "airr_test_key"
 NO_SCOPE_KEY = "airr_test_noscope"
+OTHER_TENANT_KEY = "airr_test_other_tenant"
+TENANT = "brightcart"
 
 
 def digest(raw: str, salt: str = TEST_SALT) -> str:
@@ -41,13 +43,22 @@ def key_records() -> list[dict[str, Any]]:
             "id": "dev",
             "name": "Dev test key",
             "key_hash": digest(DEV_KEY),
+            "tenant": TENANT,
             "scopes": [SCOPE_RETRIEVAL_READ, SCOPE_ADMIN_READ],
         },
         {
             "id": "noscope",
             "name": "Scopeless test key",
             "key_hash": digest(NO_SCOPE_KEY),
+            "tenant": TENANT,
             "scopes": [],
+        },
+        {
+            "id": "other",
+            "name": "Other-tenant test key",
+            "key_hash": digest(OTHER_TENANT_KEY),
+            "tenant": "acme",
+            "scopes": [SCOPE_RETRIEVAL_READ],
         },
     ]
 

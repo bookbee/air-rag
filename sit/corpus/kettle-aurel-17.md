@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Aurel 1.7 L electric kettle
 uri: https://shop.brightcart.example/p/aurel-kettle-17
 kind: product

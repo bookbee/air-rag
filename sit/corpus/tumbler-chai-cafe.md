@@ -1,4 +1,5 @@
 ---
+tenant: brightcart
 title: Chai Café insulated tumbler (चाय कैफ़े), 450 ml
 uri: https://shop.brightcart.example/p/chai-cafe-tumbler
 kind: product
