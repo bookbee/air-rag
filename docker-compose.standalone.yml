@@ -1,0 +1,17 @@
+# Run air-rag without air-infra's shared stack:
+#
+#   make up INFRA=none
+#   # = docker compose -f docker-compose.yml -f docker-compose.standalone.yml up -d --build
+#
+# docker-compose.yml joins `air-net` as `external` on purpose, so a missing
+# shared stack is a loud failure rather than a container that siblings can't
+# find. When you only want this service (plus air-model-gateway, reached over
+# the host either way), this swaps the network for this project's own bridge,
+# created and removed by compose, and changes nothing else.
+#
+# Production never uses either compose file.
+
+networks:
+  default:
+    name: air-rag-net
+    external: false

@@ -9,6 +9,22 @@ HOST ?= 0.0.0.0
 PORT ?= 8087
 
 SOURCES := src tests scripts
+
+INFRA_DIR ?= ../air-infrastructure-service
+NETWORK   := air-net
+
+# Container runs only: `shared` (default) joins the platform's air-net and
+# refuses to start without it; `none` runs on this project's own network.
+INFRA ?= shared
+ifeq ($(INFRA),shared)
+COMPOSE_FILES := -f docker-compose.yml
+UP_DEPS := infra-check
+else ifeq ($(INFRA),none)
+COMPOSE_FILES := -f docker-compose.yml -f docker-compose.standalone.yml
+UP_DEPS :=
+else
+$(error INFRA must be `shared` or `none`, got `$(INFRA)`)
+endif
 SIT_CORPUS := sit/corpus
 
 .DEFAULT_GOAL := help
@@ -84,9 +100,22 @@ openapi: ## Write the OpenAPI document to docs/openapi.json
 	@echo "Wrote docs/openapi.json"
 
 # ---- container ---------------------------------------------------------------
+.PHONY: infra-check
+infra-check: ## Fail early if air-infra's shared network is not up
+	@docker network inspect $(NETWORK) >/dev/null 2>&1 || { \
+		echo "air-infra is not up: network '$(NETWORK)' does not exist."; \
+		echo; \
+		echo "    cd $(INFRA_DIR) && make up"; \
+		echo; \
+		echo "Or run this service on its own network:"; \
+		echo; \
+		echo "    make up INFRA=none"; \
+		echo; \
+		exit 1; }
+
 .PHONY: up
-up: ## Start this service in docker (needs air-model-gateway reachable at host.docker.internal:8083)
-	$(COMPOSE) up -d --build
+up: $(UP_DEPS) ## Start in docker on air-net (INFRA=none: own network; AIR_RAG_SEED_DIR=/app/sit/corpus: seed SIT)
+	$(COMPOSE) $(COMPOSE_FILES) up -d --build
 	@$(MAKE) --no-print-directory status
 
 .PHONY: status
@@ -104,11 +133,11 @@ status: ## Report this service's own readiness
 
 .PHONY: down
 down: ## Stop the container
-	$(COMPOSE) down
+	$(COMPOSE) $(COMPOSE_FILES) down --remove-orphans
 
 .PHONY: logs
 logs: ## Tail container logs
-	$(COMPOSE) logs -f air-rag
+	$(COMPOSE) $(COMPOSE_FILES) logs -f air-rag
 
 .PHONY: clean
 clean: ## Remove the venv and tool caches

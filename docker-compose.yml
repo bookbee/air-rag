@@ -1,10 +1,17 @@
 # air-rag — this service, and nothing else.
 #
-# No dependency on air-infra's stack in Phase 0. The one real dependency is
-# air-model-gateway, its own standalone service on its own network — reached
-# over the host (host.docker.internal), exactly like air-classifier reaches it.
+# Joins the platform's shared `air-net` network (owned by
+# air-infrastructure-service) as its default network, so sibling containers
+# reach this service as http://air-rag:8080. air-rag needs nothing *on* air-net
+# in Phase 0; its one real dependency, air-model-gateway, is never on air-net
+# and is reached over the host (host.docker.internal), like the other services
+# do it.
 #
-#   cd ../air-model-gateway && make up   # once, before this — embeddings
+#   cd ../air-infrastructure-service && make up   # creates air-net
+#   cd ../air-model-gateway && make up            # embeddings
+#
+# Without air-infra's stack: `make up INFRA=none` (docker-compose.standalone.yml
+# swaps in this project's own network and nothing else).
 #   make up                           # here
 #
 # In production none of this applies: DevOps supplies
@@ -43,4 +50,12 @@ services:
       AIR_RAG__INGESTION__SEED_DIR: ${AIR_RAG_SEED_DIR:-}
     volumes:
       - ./sit/corpus:/app/sit/corpus:ro
+    networks:
+      default:
+        aliases: ["air-rag"]
     restart: unless-stopped
+
+networks:
+  default:
+    name: air-net
+    external: true
