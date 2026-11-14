@@ -17,10 +17,10 @@ import pytest
 import respx
 from fastapi import FastAPI
 
-from air_rag.config import Settings
-from air_rag.constants import SCOPE_ADMIN_READ, SCOPE_RETRIEVAL_READ, DownstreamService
-from air_rag.main import create_app
-from air_rag.schemas.common import DependencyStatus
+from air_rag_service.config import Settings
+from air_rag_service.constants import SCOPE_ADMIN_READ, SCOPE_RETRIEVAL_READ, DownstreamService
+from air_rag_service.main import create_app
+from air_rag_service.schemas.common import DependencyStatus
 
 TEST_SALT = "test-salt"
 GATEWAY_BASE_URL = "http://air-model-gateway.invalid:8083"
@@ -93,7 +93,7 @@ async def client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
 
 @pytest.fixture
 def reachable_gateway(app: FastAPI) -> Iterator[None]:
-    from air_rag.api.deps import STATE_ATTR
+    from air_rag_service.api.deps import STATE_ATTR
 
     state = getattr(app.state, STATE_ATTR)
 

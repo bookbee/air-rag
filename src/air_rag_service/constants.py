@@ -12,7 +12,7 @@ from typing import Final
 HEADER_API_KEY: Final[str] = "X-API-Key"
 HEADER_REQUEST_ID: Final[str] = "X-Request-ID"
 
-ERROR_TYPE_BASE: Final[str] = "https://air.dev/problems/air-rag"
+ERROR_TYPE_BASE: Final[str] = "https://air.dev/problems/air-rag-service"
 
 SCOPE_RETRIEVAL_READ: Final[str] = "retrieval:read"
 SCOPE_ADMIN_READ: Final[str] = "admin:read"

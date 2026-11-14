@@ -26,11 +26,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Final
 
-from air_rag.clients.model_gateway import ModelGatewayClient, ModelGatewayError
-from air_rag.constants import META_STATUS, META_TENANT, TENANT_PATTERN, DocumentStatus
-from air_rag.ingestion.base import Chunker, ingest_document
-from air_rag.observability.logging import get_logger
-from air_rag.retrieval.base import VectorStore
+from air_rag_service.clients.model_gateway import ModelGatewayClient, ModelGatewayError
+from air_rag_service.constants import META_STATUS, META_TENANT, TENANT_PATTERN, DocumentStatus
+from air_rag_service.ingestion.base import Chunker, ingest_document
+from air_rag_service.observability.logging import get_logger
+from air_rag_service.retrieval.base import VectorStore
 
 __all__ = ["SeedDocument", "load_seed_documents", "seed_store"]
 

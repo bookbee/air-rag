@@ -1,4 +1,4 @@
-"""Run sit/queries.json against a running air-rag seeded with sit/corpus.
+"""Run sit/queries.json against a running air-rag-service seeded with sit/corpus.
 
     make sit-check                       # against http://localhost:8087
     python scripts/sit_check.py --base-url http://host:8087 --key airr_...
@@ -38,7 +38,7 @@ def main() -> int:
     with httpx.Client(base_url=args.base_url, headers=headers, timeout=30.0) as http:
         caps = http.get("/v1/capabilities").raise_for_status().json()
         if not caps.get("document_count"):
-            sys.stdout.write("FAIL: index is empty — check air-rag's seed.* log lines\n")
+            sys.stdout.write("FAIL: index is empty — check air-rag-service's seed.* log lines\n")
             return 1
         sys.stdout.write(f"index: {caps['document_count']} chunks\n\n")
 

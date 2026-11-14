@@ -16,10 +16,10 @@ from typing import Final, Self
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from air_rag.config import Settings
-from air_rag.constants import TENANT_PATTERN
-from air_rag.observability.logging import get_logger
-from air_rag.schemas.common import Principal
+from air_rag_service.config import Settings
+from air_rag_service.constants import TENANT_PATTERN
+from air_rag_service.observability.logging import get_logger
+from air_rag_service.schemas.common import Principal
 
 logger = get_logger(__name__)
 
@@ -76,7 +76,7 @@ class ApiKeyRecord(BaseModel):
 
     @classmethod
     def anonymous(cls, tenant: str) -> Self:
-        from air_rag.constants import ALL_SCOPES
+        from air_rag_service.constants import ALL_SCOPES
 
         return cls(
             id=ANONYMOUS_KEY_ID,

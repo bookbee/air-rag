@@ -7,8 +7,8 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from air_rag.config import Settings
-from air_rag.security.api_keys import ApiKeyStore, hash_key
+from air_rag_service.config import Settings
+from air_rag_service.security.api_keys import ApiKeyStore, hash_key
 
 _SALT = "s"
 

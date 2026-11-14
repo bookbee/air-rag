@@ -31,7 +31,7 @@ SIT_CORPUS := sit/corpus
 
 .PHONY: help
 help: ## Show this help
-	@echo "air-rag — make <target>"
+	@echo "air-rag-service — make <target>"
 	@echo
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
 		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -63,11 +63,11 @@ env: ## Create .env from .env.example, if absent
 
 .PHONY: run
 run: ## Run the service with reload (needs air-model-gateway on :8083)
-	$(UVICORN) air_rag.main:app --reload --host $(HOST) --port $(PORT)
+	$(UVICORN) air_rag_service.main:app --reload --host $(HOST) --port $(PORT)
 
 .PHONY: run-sit
 run-sit: ## Run the service seeded with the SIT corpus (sit/corpus)
-	AIR_RAG__INGESTION__SEED_DIR=$(SIT_CORPUS) $(UVICORN) air_rag.main:app --host $(HOST) --port $(PORT)
+	AIR_RAG_SERVICE__INGESTION__SEED_DIR=$(SIT_CORPUS) $(UVICORN) air_rag_service.main:app --host $(HOST) --port $(PORT)
 
 .PHONY: sit-check
 sit-check: ## Run sit/queries.json against a seeded service on :$(PORT)
@@ -95,7 +95,7 @@ check: lint typecheck test ## Lint + typecheck + test
 
 .PHONY: openapi
 openapi: ## Write the OpenAPI document to docs/openapi.json
-	$(PY) -c "import json, pathlib; from air_rag.main import create_app; \
+	$(PY) -c "import json, pathlib; from air_rag_service.main import create_app; \
 		pathlib.Path('docs/openapi.json').write_text(json.dumps(create_app().openapi(), indent=2) + '\n')"
 	@echo "Wrote docs/openapi.json"
 
@@ -114,13 +114,13 @@ infra-check: ## Fail early if air-infra's shared network is not up
 		exit 1; }
 
 .PHONY: up
-up: $(UP_DEPS) ## Start in docker on air-net (INFRA=none: own network; AIR_RAG_SEED_DIR=/app/sit/corpus: seed SIT)
+up: $(UP_DEPS) ## Start in docker on air-net (INFRA=none: own network; AIR_RAG_SERVICE_SEED_DIR=/app/sit/corpus: seed SIT)
 	$(COMPOSE) $(COMPOSE_FILES) up -d --build
 	@$(MAKE) --no-print-directory status
 
 .PHONY: status
 status: ## Report this service's own readiness
-	@printf 'air-rag: http://localhost:$(PORT)/v1/health (on air-net as http://air-rag:8080)\n'
+	@printf 'air-rag-service: http://localhost:$(PORT)/v1/health (on air-net as http://air-rag-service:8080)\n'
 	@# Startup seeding can take a while; wait for the process to answer at all.
 	@for i in $$(seq 1 60); do curl -sf -m 1 -o /dev/null http://localhost:$(PORT)/v1/health && break; sleep 1; done
 	@code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$(PORT)/v1/ready 2>/dev/null); \
@@ -138,7 +138,7 @@ down: ## Stop the container
 
 .PHONY: logs
 logs: ## Tail container logs
-	$(COMPOSE) $(COMPOSE_FILES) logs -f air-rag
+	$(COMPOSE) $(COMPOSE_FILES) logs -f air-rag-service
 
 .PHONY: clean
 clean: ## Remove the venv and tool caches

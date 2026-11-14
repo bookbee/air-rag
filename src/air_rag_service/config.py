@@ -1,8 +1,8 @@
 """Application settings.
 
 12-factor: every value is settable from the environment with the prefix
-`AIR_RAG__` and `__` as the nesting delimiter, e.g.
-`AIR_RAG__MODEL_GATEWAY__BASE_URL=http://localhost:8083`.
+`AIR_RAG_SERVICE__` and `__` as the nesting delimiter, e.g.
+`AIR_RAG_SERVICE__MODEL_GATEWAY__BASE_URL=http://localhost:8083`.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from air_rag.constants import TENANT_PATTERN
+from air_rag_service.constants import TENANT_PATTERN
 
 # ── Application ───────────────────────────────────────────────────────────────
 
@@ -79,7 +79,7 @@ class IngestionSettings(BaseModel):
     @field_validator("seed_dir", mode="before")
     @classmethod
     def _blank_is_unset(cls, value: object) -> object:
-        # Compose passes `${AIR_RAG_SEED_DIR:-}` through as "" when unset.
+        # Compose passes `${AIR_RAG_SERVICE_SEED_DIR:-}` through as "" when unset.
         return None if value == "" else value
 
 
@@ -102,7 +102,7 @@ class SecuritySettings(BaseModel):
 
 
 class ObservabilitySettings(BaseModel):
-    service_name: str = "air-rag"
+    service_name: str = "air-rag-service"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     log_format: Literal["json", "console"] = "json"
     metrics_enabled: bool = True
@@ -114,7 +114,7 @@ class ObservabilitySettings(BaseModel):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="AIR_RAG__",
+        env_prefix="AIR_RAG_SERVICE__",
         env_nested_delimiter="__",
         env_file=".env",
         env_file_encoding="utf-8",

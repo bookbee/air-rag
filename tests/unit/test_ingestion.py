@@ -4,10 +4,10 @@ air-model-gateway)."""
 
 from __future__ import annotations
 
-from air_rag.clients.model_gateway import EmbeddingResult
-from air_rag.constants import DocumentStatus
-from air_rag.ingestion.base import FixedSizeChunker, ingest_document
-from air_rag.retrieval.memory import InMemoryVectorStore
+from air_rag_service.clients.model_gateway import EmbeddingResult
+from air_rag_service.constants import DocumentStatus
+from air_rag_service.ingestion.base import FixedSizeChunker, ingest_document
+from air_rag_service.retrieval.memory import InMemoryVectorStore
 
 
 class _FakeGatewayClient:

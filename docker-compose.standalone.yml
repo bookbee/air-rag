@@ -1,4 +1,4 @@
-# Run air-rag without air-infra's shared stack:
+# Run air-rag-service without air-infra's shared stack:
 #
 #   make up INFRA=none
 #   # = docker compose -f docker-compose.yml -f docker-compose.standalone.yml up -d --build
@@ -13,5 +13,5 @@
 
 networks:
   default:
-    name: air-rag-net
+    name: air-rag-service-net
     external: false

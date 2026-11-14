@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from air_rag.clients.model_gateway import ModelGatewayClient
-from air_rag.constants import META_STATUS, META_TENANT, DocumentStatus
-from air_rag.retrieval.base import VectorStore
+from air_rag_service.clients.model_gateway import ModelGatewayClient
+from air_rag_service.constants import META_STATUS, META_TENANT, DocumentStatus
+from air_rag_service.retrieval.base import VectorStore
 
 
 class Chunker(Protocol):

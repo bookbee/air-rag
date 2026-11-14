@@ -1,4 +1,4 @@
-# air-rag
+# air-rag-service
 
 Ingestion, indexing and retrieval for the AIR platform.
 
@@ -12,10 +12,10 @@ Ingestion, indexing and retrieval for the AIR platform.
 `air-platform`'s GATHER step calls `POST /v1/retrieve` for grounding and
 citations (`air-platform/docs/01-hld.md` §4). Domain agents in `air-tools`
 that need a RAG lookup (a product-recommendation agent, say) call the same
-endpoint the same way — air-rag has one contract, two kinds of caller.
+endpoint the same way — air-rag-service has one contract, two kinds of caller.
 
 ```text
-air-platform  ──POST /v1/retrieve──▶  air-rag  ──embed──▶  air-model-gateway
+air-platform  ──POST /v1/retrieve──▶  air-rag-service  ──embed──▶  air-model-gateway
 air-tools     ──POST /v1/retrieve──▶     │
                                           └──search──▶  vector store
                                                           (in-memory, Phase 0)
@@ -26,7 +26,7 @@ air-tools     ──POST /v1/retrieve──▶     │
 never read from the body: the request rejects unknown fields (422), so a
 `tenant` sent in the body gets a 422 rather than being ignored. A key without a
 tenant fails startup, and unauthenticated mode needs
-`AIR_RAG__SECURITY__ANONYMOUS_TENANT`. Documents marked `status: archived`
+`AIR_RAG_SERVICE__SECURITY__ANONYMOUS_TENANT`. Documents marked `status: archived`
 stay indexed but are never returned.
 
 **Read-only from every caller's perspective.** `POST /v1/retrieve` only
@@ -87,29 +87,29 @@ document (stores nothing), and a product with a Devanagari name. The dev key
 `airr_local_dev_key` belongs to tenant `brightcart`.
 
 The index lives in memory and the public API is read-only, so the corpus is
-ingested **at startup** when `AIR_RAG__INGESTION__SEED_DIR` is set:
+ingested **at startup** when `AIR_RAG_SERVICE__INGESTION__SEED_DIR` is set:
 
 ```bash
 make run-sit       # :8087, seeded from sit/corpus (air-model-gateway must be up)
 make sit-check     # sit/queries.json: expected top-3 hit per query, plus no
                    # cross-tenant, archived or untenanted citation; non-zero on failure
 
-AIR_RAG_SEED_DIR=/app/sit/corpus make up    # the same, in docker (corpus is mounted)
+AIR_RAG_SERVICE_SEED_DIR=/app/sit/corpus make up    # the same, in docker (corpus is mounted)
 ```
 
 ## Docker and the shared network
 
 `make up` runs the container on the platform's shared `air-net` network
 (created by `../air-infrastructure-service`'s `make up`), where sibling
-containers reach it as **`http://air-rag:8080`**. From the host it's still
+containers reach it as **`http://air-rag-service:8080`**. From the host it's still
 `localhost:8087`. air-model-gateway is never on air-net, so the container
 reaches it at `host.docker.internal:8083`.
 
 ```bash
 cd ../air-infrastructure-service && make up   # air-net (make up fails early without it)
 cd ../air-model-gateway && make up            # embeddings
-make up                                       # air-rag on air-net
-AIR_RAG_SEED_DIR=/app/sit/corpus make up      # ...seeded with the SIT corpus
+make up                                       # air-rag-service on air-net
+AIR_RAG_SERVICE_SEED_DIR=/app/sit/corpus make up      # ...seeded with the SIT corpus
 make up INFRA=none                            # own network instead (docker-compose.standalone.yml)
 make status | logs | down
 ```

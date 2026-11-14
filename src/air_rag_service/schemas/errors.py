@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from air_rag.constants import ERROR_TYPE_BASE
+from air_rag_service.constants import ERROR_TYPE_BASE
 
 
 class FieldError(BaseModel):

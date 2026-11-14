@@ -6,8 +6,8 @@ import httpx
 import pytest
 from fastapi import FastAPI
 
-from air_rag.api.deps import STATE_ATTR
-from air_rag.api.v1.system import EMPTY_INDEX_WARNING
+from air_rag_service.api.deps import STATE_ATTR
+from air_rag_service.api.v1.system import EMPTY_INDEX_WARNING
 from tests.conftest import DEV_KEY, NO_SCOPE_KEY, TENANT, auth
 
 
@@ -17,7 +17,7 @@ async def test_health_needs_no_auth_and_no_dependencies(client: httpx.AsyncClien
     assert response.status_code == httpx.codes.OK
     body = response.json()
     assert body["status"] == "ok"
-    assert body["service"] == "air-rag"
+    assert body["service"] == "air-rag-service"
 
 
 @pytest.mark.usefixtures("unreachable_gateway")
@@ -63,7 +63,7 @@ async def test_metrics_exposes_the_prometheus_payload(client: httpx.AsyncClient)
     response = await client.get("/metrics")
 
     assert response.status_code == httpx.codes.OK
-    assert "air_rag_requests_total" in response.text
+    assert "air_rag_service_requests_total" in response.text
 
 
 async def test_metrics_is_absent_from_the_openapi_document(app: FastAPI) -> None:

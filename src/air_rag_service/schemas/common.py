@@ -6,7 +6,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from air_rag.constants import DownstreamService
+from air_rag_service.constants import DownstreamService
 
 
 class Principal(BaseModel):

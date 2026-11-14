@@ -28,11 +28,11 @@ import httpx
 import structlog
 from pydantic import BaseModel, ConfigDict
 
-from air_rag.config import Settings
-from air_rag.constants import HEADER_API_KEY, HEADER_REQUEST_ID, DownstreamService
-from air_rag.observability import metrics
-from air_rag.observability.logging import get_logger
-from air_rag.schemas.common import DependencyStatus
+from air_rag_service.config import Settings
+from air_rag_service.constants import HEADER_API_KEY, HEADER_REQUEST_ID, DownstreamService
+from air_rag_service.observability import metrics
+from air_rag_service.observability.logging import get_logger
+from air_rag_service.schemas.common import DependencyStatus
 
 __all__ = ["EmbeddingResult", "ModelGatewayClient", "ModelGatewayError"]
 

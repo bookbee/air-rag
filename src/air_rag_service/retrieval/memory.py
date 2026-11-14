@@ -14,7 +14,7 @@ import math
 from collections.abc import Mapping
 from typing import Any
 
-from air_rag.retrieval.base import VectorHit
+from air_rag_service.retrieval.base import VectorHit
 
 
 def _cosine(a: list[float], b: list[float]) -> float:

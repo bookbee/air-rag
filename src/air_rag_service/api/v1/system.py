@@ -8,12 +8,17 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Response
 from starlette.status import HTTP_503_SERVICE_UNAVAILABLE
 
-from air_rag import __version__
-from air_rag.api.deps import AppState, get_app_state, require_principal
-from air_rag.api.errors import InsufficientScopeError
-from air_rag.constants import SCOPE_ADMIN_READ
-from air_rag.observability import metrics
-from air_rag.schemas.common import CapabilitiesResponse, HealthResponse, Principal, ReadyResponse
+from air_rag_service import __version__
+from air_rag_service.api.deps import AppState, get_app_state, require_principal
+from air_rag_service.api.errors import InsufficientScopeError
+from air_rag_service.constants import SCOPE_ADMIN_READ
+from air_rag_service.observability import metrics
+from air_rag_service.schemas.common import (
+    CapabilitiesResponse,
+    HealthResponse,
+    Principal,
+    ReadyResponse,
+)
 
 __all__ = ["EMPTY_INDEX_WARNING", "build_metrics_router", "router"]
 

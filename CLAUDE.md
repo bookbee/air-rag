@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-air-rag is the ingestion/indexing/retrieval service of the AIR platform (Python 3.12, FastAPI, Pydantic v2). It is a **Phase-0 skeleton**: auth, health/ready/capabilities, an in-process vector store, and a chunk → embed → index pipeline are real, but no real document source is ingested yet. `docs/00-plan.md` holds the goals, non-goals and phased roadmap. Read it before adding scope.
+air-rag-service is the ingestion/indexing/retrieval service of the AIR platform (Python 3.12, FastAPI, Pydantic v2). It is a **Phase-0 skeleton**: auth, health/ready/capabilities, an in-process vector store, and a chunk → embed → index pipeline are real, but no real document source is ingested yet. `docs/00-plan.md` holds the goals, non-goals and phased roadmap. Read it before adding scope.
 
 Sibling repos are referenced by relative path (`../air-model-gateway`, `air-platform/docs/...`). Port map: 8083 is air-model-gateway, 8087 is this service.
 
@@ -17,15 +17,15 @@ make run          # uvicorn with reload on :8087 (needs air-model-gateway on :80
 make check        # ruff lint + mypy --strict (src only) + pytest
 make lint | fmt | typecheck | test
 make openapi      # write docs/openapi.json from create_app()
-make run-sit      # run seeded from sit/corpus (AIR_RAG__INGESTION__SEED_DIR)
+make run-sit      # run seeded from sit/corpus (AIR_RAG_SERVICE__INGESTION__SEED_DIR)
 make sit-check    # scripts/sit_check.py: sit/queries.json against a seeded :8087
-make up / down / logs / status   # docker on the shared air-net as http://air-rag:8080 (needs ../air-infrastructure-service up;
+make up / down / logs / status   # docker on the shared air-net as http://air-rag-service:8080 (needs ../air-infrastructure-service up;
                                  # INFRA=none for its own network); reaches the gateway at host.docker.internal:8083
 ```
 
 Single test: `.venv/bin/pytest tests/unit/test_retrieval_route.py::test_retrieve_requires_a_key`. pytest is configured with `asyncio_mode = "auto"` and `pythonpath = ["src"]`, so async tests need no decorator.
 
-Local dev API key: `X-API-Key: airr_local_dev_key` (its hash is in `.env.example`). To mint a new key: `python -c "from air_rag.security.api_keys import generate_key; print(generate_key('your-salt'))"`.
+Local dev API key: `X-API-Key: airr_local_dev_key` (its hash is in `.env.example`). To mint a new key: `python -c "from air_rag_service.security.api_keys import generate_key; print(generate_key('your-salt'))"`.
 
 ## Architecture
 
@@ -38,10 +38,10 @@ Local dev API key: `X-API-Key: airr_local_dev_key` (its hash is in `.env.example
   - `embed()` batches by `embed_batch_size` (gateway max 2,048 texts/call), forwards `X-Request-ID`, and raises `ModelGatewayError`. Retrieval maps that to `DependencyUnavailableError` (503).
   - `probe()` never raises. It checks `/v1/capabilities` (model granted, available, dimensions match) and then the gateway's `/v1/ready` for that model's provider specifically. The gateway's own readiness is green while *any* provider answers. Our `/v1/ready` gates on this and nothing else, and `/v1/health` depends on nothing.
 - **Empty results are honest.** An empty index or empty embedding returns `citations: []`, never an error or a fabricated hit.
-- **Auth** (`security/api_keys.py`, `api/deps.py`): `X-API-Key` is matched by salted sha256 against records from `AIR_RAG__SECURITY__API_KEYS_INLINE` (JSON array) or `API_KEYS_FILE`. Raw keys never live in config. Scopes come from `constants.py` (`retrieval:read`, `admin:read`) and are enforced with `require_scope(...)`. `allow_unauthenticated` is rejected when `env=production`.
+- **Auth** (`security/api_keys.py`, `api/deps.py`): `X-API-Key` is matched by salted sha256 against records from `AIR_RAG_SERVICE__SECURITY__API_KEYS_INLINE` (JSON array) or `API_KEYS_FILE`. Raw keys never live in config. Scopes come from `constants.py` (`retrieval:read`, `admin:read`) and are enforced with `require_scope(...)`. `allow_unauthenticated` is rejected when `env=production`.
 - **Errors** (`api/errors.py`): everything leaves as RFC 9457 `application/problem+json`. To add an error, add an `AppError` subclass with `slug`/`title`/`status` and register it in `_BY_STATUS`. Raise those subclasses rather than `HTTPException`.
 - **Middleware** (`api/middleware.py`) is raw ASGI, deliberately not `BaseHTTPMiddleware`, so structlog contextvars bound downstream stay visible for cleanup. It handles request-id (`X-Request-ID`), access log + Prometheus metrics, and the body-size limit.
-- **Config** (`config.py`): pydantic-settings with prefix `AIR_RAG__` and `__` as the nesting delimiter (e.g. `AIR_RAG__MODEL_GATEWAY__BASE_URL`). Sections are `app`, `model_gateway`, `retrieval`, `security`, `obs`. `.env.example` documents every key. Keep it in sync when adding settings.
+- **Config** (`config.py`): pydantic-settings with prefix `AIR_RAG_SERVICE__` and `__` as the nesting delimiter (e.g. `AIR_RAG_SERVICE__MODEL_GATEWAY__BASE_URL`). Sections are `app`, `model_gateway`, `retrieval`, `security`, `obs`. `.env.example` documents every key. Keep it in sync when adding settings.
 - `constants.py` values (headers, scopes, problem-type base URL, `DownstreamService`) show up in responses and metric labels, so renaming one is a breaking change.
 
 ## Testing conventions
