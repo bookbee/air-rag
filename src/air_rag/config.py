@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal, Self
 
-from pydantic import BaseModel, Field, SecretStr, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # ── Application ───────────────────────────────────────────────────────────────
@@ -63,6 +63,24 @@ class RetrievalSettings(BaseModel):
     default_top_k: int = Field(default=5, ge=1, le=50)
 
 
+# ── Ingestion ─────────────────────────────────────────────────────────────────
+
+
+class IngestionSettings(BaseModel):
+    """Startup seeding: the in-process index can only be filled from inside
+    the process, and the public API stays read-only, so a seed corpus (SIT's
+    `sit/corpus/`) is ingested at boot. Off unless `seed_dir` is set."""
+
+    seed_dir: Path | None = None
+    chunk_size: int = Field(default=800, ge=100, le=32_000)
+
+    @field_validator("seed_dir", mode="before")
+    @classmethod
+    def _blank_is_unset(cls, value: object) -> object:
+        # Compose passes `${AIR_RAG_SEED_DIR:-}` through as "" when unset.
+        return None if value == "" else value
+
+
 # ── Security ──────────────────────────────────────────────────────────────────
 
 
@@ -102,6 +120,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     model_gateway: ModelGatewaySettings = Field(default_factory=ModelGatewaySettings)
     retrieval: RetrievalSettings = Field(default_factory=RetrievalSettings)
+    ingestion: IngestionSettings = Field(default_factory=IngestionSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     obs: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
 

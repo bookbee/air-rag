@@ -64,3 +64,27 @@ dependency beyond the standard library. Correct for a laptop and for tests,
 gone on restart — the same trade-off `air-platform`'s in-memory session
 store makes. A real backend implements `retrieval/base.py`'s `VectorStore`
 Protocol; `main.py`'s construction is the only place that changes.
+
+## SIT corpus
+
+`sit/corpus/` is a dummy corpus for system integration testing: 27 documents
+for a fictional store, Brightcart (17 policies, 10 products), on reserved
+`.example` URLs. Each file's front matter (`title`, `uri`, `kind`) is copied
+into every chunk's `metadata`. Deliberate edge cases: an archived
+near-duplicate of the returns policy, a warranty document long enough to
+span several chunks, an empty document (stores nothing), and a product with
+a Devanagari name.
+
+The index lives in memory and the public API is read-only, so the corpus is
+ingested **at startup** when `AIR_RAG__INGESTION__SEED_DIR` is set:
+
+```bash
+make run-sit       # :8087, seeded from sit/corpus (air-model-gateway must be up)
+make sit-check     # sit/queries.json: expected top-3 hit per query; non-zero on failure
+
+AIR_RAG_SEED_DIR=/app/sit/corpus make up    # the same, in docker (corpus is mounted)
+```
+
+If the gateway can't embed at boot, seeding stops with a `seed.failed` log
+line and the service still starts. `/v1/capabilities`' `document_count`
+shows how many chunks made it in.

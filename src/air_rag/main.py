@@ -23,6 +23,8 @@ from air_rag.api.v1.router import api_router
 from air_rag.api.v1.system import build_metrics_router
 from air_rag.clients.model_gateway import ModelGatewayClient
 from air_rag.config import Settings, get_settings
+from air_rag.ingestion.base import FixedSizeChunker
+from air_rag.ingestion.seed import seed_store
 from air_rag.observability.logging import configure_logging, get_logger
 from air_rag.retrieval.memory import InMemoryVectorStore
 from air_rag.security.api_keys import ApiKeyStore
@@ -50,6 +52,14 @@ class OrjsonResponse(JSONResponse):
 def _build_lifespan(state: AppState) -> Any:
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        ingestion = state.settings.ingestion
+        if ingestion.seed_dir is not None:
+            await seed_store(
+                ingestion.seed_dir,
+                chunker=FixedSizeChunker(size=ingestion.chunk_size),
+                model_gateway=state.model_gateway,
+                store=state.store,
+            )
         _log.info(
             "startup.complete",
             version=__version__,

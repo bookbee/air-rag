@@ -8,7 +8,8 @@ COMPOSE ?= docker compose
 HOST ?= 0.0.0.0
 PORT ?= 8087
 
-SOURCES := src tests
+SOURCES := src tests scripts
+SIT_CORPUS := sit/corpus
 
 .DEFAULT_GOAL := help
 
@@ -47,6 +48,14 @@ env: ## Create .env from .env.example, if absent
 .PHONY: run
 run: ## Run the service with reload (needs air-model-gateway on :8083)
 	$(UVICORN) air_rag.main:app --reload --host $(HOST) --port $(PORT)
+
+.PHONY: run-sit
+run-sit: ## Run the service seeded with the SIT corpus (sit/corpus)
+	AIR_RAG__INGESTION__SEED_DIR=$(SIT_CORPUS) $(UVICORN) air_rag.main:app --host $(HOST) --port $(PORT)
+
+.PHONY: sit-check
+sit-check: ## Run sit/queries.json against a seeded service on :$(PORT)
+	$(PY) scripts/sit_check.py --base-url http://localhost:$(PORT)
 
 .PHONY: test
 test: ## Run tests

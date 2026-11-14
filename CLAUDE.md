@@ -17,6 +17,8 @@ make run          # uvicorn with reload on :8087 (needs air-model-gateway on :80
 make check        # ruff lint + mypy --strict (src only) + pytest
 make lint | fmt | typecheck | test
 make openapi      # write docs/openapi.json from create_app()
+make run-sit      # run seeded from sit/corpus (AIR_RAG__INGESTION__SEED_DIR)
+make sit-check    # scripts/sit_check.py: sit/queries.json against a seeded :8087
 make up / down / logs / status   # docker compose; container reaches air-model-gateway at host.docker.internal:8083
 ```
 
@@ -27,7 +29,7 @@ Local dev API key: `X-API-Key: airr_local_dev_key` (its hash is in `.env.example
 ## Architecture
 
 - **App factory** (`main.py`): `create_app(settings)` builds the single `AppState` (settings, `ApiKeyStore`, `ModelGatewayClient`, `VectorStore`) and attaches it to `app.state` under `STATE_ATTR`. Routes get it through `api/deps.py:get_app_state`. Construction in `create_app` is the only place a backend is chosen. Swapping `InMemoryVectorStore` for a real backend means implementing the `VectorStore` Protocol in `retrieval/base.py` (`search`, `upsert`, `__len__`) and changing that one line.
-- **Public API is read-only.** `POST /v1/retrieve` embeds the query through air-model-gateway and searches the store. No route writes to the index. Ingestion (`ingestion/base.py`: `Chunker` Protocol, naive `FixedSizeChunker`, `ingest_document`) is an internal path that no route exposes yet. Chunk ids are `"{source_id}#{index}"`.
+- **Public API is read-only.** `POST /v1/retrieve` embeds the query through air-model-gateway and searches the store. No route writes to the index. Ingestion (`ingestion/base.py`: `Chunker` Protocol, naive `FixedSizeChunker`, `ingest_document`) is an internal path that no route exposes. Its only driver is startup seeding (`ingestion/seed.py`, invoked from the lifespan when `ingestion.seed_dir` is set). Seeding turns each file's front matter into chunk metadata (`title`, `uri`, `kind`), and a gateway failure stops it without blocking boot. Chunk ids are `"{source_id}#{index}"`.
 - **air-model-gateway is the only model path** (`clients/model_gateway.py`), reached over HTTP with this service's token in `X-API-Key` (`air-rag-dev` locally). It calls `POST /v1/embed` with `{"model": "local-768-v1", "input": [...]}`. Unknown fields such as the old `task` get a 422, and `/v1/inference` is gone. No provider SDKs or provider keys belong in this repo.
   - The embedding model name plus its dimensions (`model_gateway.embed_model` / `embed_dimensions`) are the **index's identity**. `embed()` rejects any response from another name or dimension, and ingestion stores `embedding_model` in each chunk's metadata. Changing the model means a re-index.
   - `embed()` batches by `embed_batch_size` (gateway max 2,048 texts/call), forwards `X-Request-ID`, and raises `ModelGatewayError`. Retrieval maps that to `DependencyUnavailableError` (503).
