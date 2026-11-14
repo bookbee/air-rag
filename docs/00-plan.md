@@ -25,7 +25,7 @@ agent that needs a lookup.
 | --- | --- | --- |
 | G1 | One retrieval contract, two kinds of caller | air-platform and air-tools both call `POST /v1/retrieve` identically |
 | G2 | Read-only from the public API | No route writes to the index; ingestion is a separate internal path |
-| G3 | All embeddings through air-llm | No provider SDK, no provider key in this repo |
+| G3 | All embeddings through air-model-gateway | No provider SDK, no provider key in this repo |
 | G4 | A real backend is a drop-in | `retrieval/base.py`'s `VectorStore` Protocol is the only contract a real backend has to satisfy |
 | G5 | Honest empty results | An unindexed query returns no citations, not a fabricated one |
 
@@ -35,7 +35,7 @@ agent that needs a lookup.
   parsing is Phase 1, once a real document source exists to parse.
 - **No mutation of any business system.** air-rag only ever reads and writes
   its own index.
-- **No model hosting.** air-llm is the only embedding path.
+- **No model hosting.** air-model-gateway (`POST /v1/embed`, `local-768-v1`) is the only embedding path.
 - **No conversation/session state.** Each retrieval call is stateless.
 
 ## 4. Decisions taken
@@ -46,7 +46,7 @@ agent that needs a lookup.
 | Caller shape | One endpoint, two callers (air-platform, air-tools' agents) | Confirmed with the user: agent reasoning lives in air-tools, and a RAG-backed agent calls air-rag the same way air-platform does |
 | Auth | `X-API-Key`, salted-sha256, scopes — no channel concept | Same reasoning as air-tools: one caller shape, not air-platform's customer/business split |
 | Language / runtime | Python 3.12, FastAPI, Pydantic v2 | Matches every other AIR service |
-| Port | **8087** | air-infra/README.md's port map (bumped from 8083 once air-llm claimed that slot) |
+| Port | **8087** | air-infra/README.md's port map (bumped from 8083 once the model gateway claimed that slot) |
 
 ## 5. Phased delivery
 

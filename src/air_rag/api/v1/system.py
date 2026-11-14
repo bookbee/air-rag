@@ -35,8 +35,9 @@ async def health(state: Annotated[AppState, Depends(get_app_state)]) -> HealthRe
     response_model=ReadyResponse,
     summary="Readiness",
     description=(
-        "Whether this replica can serve a retrieval call. Gates on air-llm, the one "
-        "dependency without which a query can't be embedded."
+        "Whether this replica can serve a retrieval call. Gates on air-model-gateway "
+        "serving this index's embedding model, the one dependency without which a "
+        "query can't be embedded."
     ),
     responses={HTTP_503_SERVICE_UNAVAILABLE: {"model": ReadyResponse}},
 )
@@ -44,8 +45,8 @@ async def ready(
     response: Response,
     state: Annotated[AppState, Depends(get_app_state)],
 ) -> ReadyResponse:
-    llm = await state.llm.probe()
-    ready_now = bool(llm.reachable)
+    gateway = await state.model_gateway.probe()
+    ready_now = bool(gateway.reachable)
     if not ready_now:
         response.status_code = HTTP_503_SERVICE_UNAVAILABLE
     return ReadyResponse(
@@ -53,7 +54,7 @@ async def ready(
         service=state.settings.obs.service_name,
         version=__version__,
         checked_at=datetime.now(UTC),
-        dependencies=[llm],
+        dependencies=[gateway],
     )
 
 

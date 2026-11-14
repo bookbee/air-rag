@@ -18,16 +18,16 @@ async def test_health_needs_no_auth_and_no_dependencies(client: httpx.AsyncClien
     assert body["service"] == "air-rag"
 
 
-@pytest.mark.usefixtures("unreachable_llm")
-async def test_ready_is_503_when_llm_is_unreachable(client: httpx.AsyncClient) -> None:
+@pytest.mark.usefixtures("unreachable_gateway")
+async def test_ready_is_503_when_the_gateway_is_unreachable(client: httpx.AsyncClient) -> None:
     response = await client.get("/v1/ready")
 
     assert response.status_code == httpx.codes.SERVICE_UNAVAILABLE
     assert response.json()["ready"] is False
 
 
-@pytest.mark.usefixtures("reachable_llm")
-async def test_ready_is_200_when_llm_is_reachable(client: httpx.AsyncClient) -> None:
+@pytest.mark.usefixtures("reachable_gateway")
+async def test_ready_is_200_when_the_gateway_is_reachable(client: httpx.AsyncClient) -> None:
     response = await client.get("/v1/ready")
 
     assert response.status_code == httpx.codes.OK

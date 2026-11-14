@@ -23,4 +23,4 @@ ALL_SCOPES: Final[frozenset[str]] = frozenset({SCOPE_RETRIEVAL_READ, SCOPE_ADMIN
 class DownstreamService(StrEnum):
     """Services this one calls. Values match repo names, for metric labels."""
 
-    LLM = "air-llm"
+    MODEL_GATEWAY = "air-model-gateway"

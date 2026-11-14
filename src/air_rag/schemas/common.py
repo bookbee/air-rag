@@ -39,7 +39,7 @@ class DependencyStatus(BaseModel):
 
 class ReadyResponse(BaseModel):
     """Readiness: can this replica serve a retrieval call at all? Gates on
-    air-llm alone — the one dependency without which a query can't be
+    air-model-gateway alone — the one dependency without which a query can't be
     embedded."""
 
     ready: bool

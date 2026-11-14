@@ -114,7 +114,7 @@ class InternalError(AppError):
 
 
 class DependencyUnavailableError(AppError):
-    """air-llm is unreachable, so a query can't be embedded."""
+    """air-model-gateway is unreachable, so a query can't be embedded."""
 
     slug = "dependency-unavailable"
     title = "Required dependency unavailable"

@@ -1,15 +1,15 @@
 # air-rag — this service, and nothing else.
 #
 # No dependency on air-infra's stack in Phase 0. The one real dependency is
-# air-llm, its own standalone service on its own network — reached over the
-# host (host.docker.internal), exactly like air-classifier and air-tools
-# reach it.
+# air-model-gateway, its own standalone service on its own network — reached
+# over the host (host.docker.internal), exactly like air-classifier reaches it.
 #
-#   cd ../air-llm && make up          # once, before this — models/embeddings
+#   cd ../air-model-gateway && make up   # once, before this — embeddings
 #   make up                           # here
 #
-# In production none of this applies: DevOps supplies AIR_RAG__LLM__BASE_URL
-# against a managed air-llm endpoint, and this compose file is not deployed.
+# In production none of this applies: DevOps supplies
+# AIR_RAG__MODEL_GATEWAY__BASE_URL and __API_KEY for the cluster's
+# air-model-gateway, and this compose file is not deployed.
 name: air-rag
 
 services:
@@ -28,7 +28,9 @@ services:
       AIR_RAG__APP__ENV: development
       AIR_RAG__OBS__LOG_FORMAT: console
       AIR_RAG__OBS__LOG_LEVEL: INFO
-      AIR_RAG__LLM__BASE_URL: http://host.docker.internal:8083
+      AIR_RAG__MODEL_GATEWAY__BASE_URL: http://host.docker.internal:8083
+      # The gateway's local dev token for this service (its .env.example).
+      AIR_RAG__MODEL_GATEWAY__API_KEY: air-rag-dev
       # One known development key, baked in. Raw value: airr_local_dev_key.
       AIR_RAG__SECURITY__HASH_SALT: air-rag-dev-salt
       AIR_RAG__SECURITY__API_KEYS_INLINE: >-

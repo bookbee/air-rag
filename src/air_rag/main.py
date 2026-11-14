@@ -1,7 +1,7 @@
 """The application factory.
 
 Phase-0 skeleton: `create_app(settings)` never reaches for the environment on
-its own. The one thing that gates readiness is air-llm; the service otherwise
+its own. The one thing that gates readiness is air-model-gateway; the service otherwise
 boots and serves `/v1/health` regardless.
 """
 
@@ -21,7 +21,7 @@ from air_rag.api.errors import install_error_handlers
 from air_rag.api.middleware import install_middleware
 from air_rag.api.v1.router import api_router
 from air_rag.api.v1.system import build_metrics_router
-from air_rag.clients.llm import LlmClient
+from air_rag.clients.model_gateway import ModelGatewayClient
 from air_rag.config import Settings, get_settings
 from air_rag.observability.logging import configure_logging, get_logger
 from air_rag.retrieval.memory import InMemoryVectorStore
@@ -35,7 +35,7 @@ _TITLE: Final[str] = "AIR RAG"
 _DESCRIPTION: Final[str] = """
 Ingestion, indexing and retrieval for the AIR platform.
 
-`POST /v1/retrieve` embeds a query against air-llm and searches the index,
+`POST /v1/retrieve` embeds a query through air-model-gateway and searches the index,
 returning citations air-platform's synthesis step grounds an answer in. This
 service holds no mutating surface toward any business system — it only reads
 and writes its own index.
@@ -57,11 +57,12 @@ def _build_lifespan(state: AppState) -> Any:
             port=state.settings.app.port,
             api_keys=len(state.key_store),
             document_count=len(state.store),
+            embed_model=state.settings.model_gateway.embed_model,
         )
         try:
             yield
         finally:
-            await state.llm.aclose()
+            await state.model_gateway.aclose()
             _log.info("shutdown.complete")
 
     return lifespan
@@ -76,7 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     state = AppState(
         settings=resolved,
         key_store=key_store,
-        llm=LlmClient(resolved),
+        model_gateway=ModelGatewayClient(resolved),
         store=InMemoryVectorStore(),
     )
 

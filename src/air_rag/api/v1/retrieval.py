@@ -10,11 +10,11 @@ from __future__ import annotations
 import time
 from typing import Annotated
 
-import httpx
 from fastapi import APIRouter, Depends
 
 from air_rag.api.deps import AppState, get_app_state, require_scope
 from air_rag.api.errors import DependencyUnavailableError
+from air_rag.clients.model_gateway import ModelGatewayError
 from air_rag.constants import SCOPE_RETRIEVAL_READ
 from air_rag.observability import metrics
 from air_rag.observability.logging import get_logger
@@ -38,11 +38,13 @@ async def retrieve(
 ) -> RetrievalResponse:
     started = time.perf_counter()
     try:
-        embedded = await state.llm.embed([request.query])
-    except httpx.HTTPError as exc:
+        embedded = await state.model_gateway.embed([request.query])
+    except ModelGatewayError as exc:
         metrics.record_retrieval(outcome="error", duration_s=time.perf_counter() - started)
-        logger.warning("retrieval.embed_failed", error=type(exc).__name__)
-        raise DependencyUnavailableError("Could not reach air-llm to embed the query.") from exc
+        logger.warning("retrieval.embed_failed", error=str(exc))
+        raise DependencyUnavailableError(
+            "Could not embed the query through air-model-gateway."
+        ) from exc
 
     if not embedded.embeddings:
         metrics.record_retrieval(outcome="empty", duration_s=time.perf_counter() - started)

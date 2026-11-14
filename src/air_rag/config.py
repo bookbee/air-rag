@@ -2,7 +2,7 @@
 
 12-factor: every value is settable from the environment with the prefix
 `AIR_RAG__` and `__` as the nesting delimiter, e.g.
-`AIR_RAG__LLM__BASE_URL=http://localhost:8083`.
+`AIR_RAG__MODEL_GATEWAY__BASE_URL=http://localhost:8083`.
 """
 
 from __future__ import annotations
@@ -30,25 +30,27 @@ class AppSettings(BaseModel):
         return self.env == "production"
 
 
-# ── air-llm ───────────────────────────────────────────────────────────────────
+# ── air-model-gateway ─────────────────────────────────────────────────────────
 
 
-class LlmSettings(BaseModel):
-    """The air-llm gateway. Embeddings — ingestion and query-time both — go
+class ModelGatewaySettings(BaseModel):
+    """air-model-gateway. Embeddings — ingestion and query-time both — go
     through this. The one dependency whose absence is fatal, so `/v1/ready`
-    gates on it and on nothing else, same shape as air-tools'/air-platform's
-    `LlmSettings`."""
+    gates on it and on nothing else."""
 
     base_url: str = "http://localhost:8083"
+    #: This service's gateway token (`air-rag-dev` on a laptop).
     api_key: SecretStr | None = None
     timeout_s: float = Field(default=30.0, gt=0)
     health_timeout_s: float = Field(default=2.0, gt=0)
     max_retries: int = Field(default=2, ge=0, le=8)
-    default_model: str | None = None
-
-    @property
-    def configured(self) -> bool:
-        return self.api_key is not None
+    #: A published embedding name — this index's identity. Changing it means
+    #: a re-index; vectors from different names are not comparable.
+    embed_model: str = "local-768-v1"
+    #: Checked against every gateway response and at readiness.
+    embed_dimensions: int = Field(default=768, ge=1)
+    #: Texts per `/v1/embed` call; the gateway rejects more than 2,048.
+    embed_batch_size: int = Field(default=256, ge=1, le=2048)
 
 
 # ── Retrieval ─────────────────────────────────────────────────────────────────
@@ -98,7 +100,7 @@ class Settings(BaseSettings):
     )
 
     app: AppSettings = Field(default_factory=AppSettings)
-    llm: LlmSettings = Field(default_factory=LlmSettings)
+    model_gateway: ModelGatewaySettings = Field(default_factory=ModelGatewaySettings)
     retrieval: RetrievalSettings = Field(default_factory=RetrievalSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     obs: ObservabilitySettings = Field(default_factory=ObservabilitySettings)

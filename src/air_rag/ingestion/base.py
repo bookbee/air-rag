@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from air_rag.clients.llm import LlmClient
+from air_rag.clients.model_gateway import ModelGatewayClient
 from air_rag.retrieval.base import VectorStore
 
 
@@ -40,7 +40,7 @@ async def ingest_document(
     text: str,
     metadata: dict[str, Any],
     chunker: Chunker,
-    llm: LlmClient,
+    model_gateway: ModelGatewayClient,
     store: VectorStore,
 ) -> int:
     """Chunk, embed and index one document. Returns the chunk count actually
@@ -48,11 +48,17 @@ async def ingest_document(
     chunks = chunker.chunk(text)
     if not chunks:
         return 0
-    result = await llm.embed(chunks)
-    for index, (chunk_text, embedding) in enumerate(
-        zip(chunks, result.embeddings, strict=False)
-    ):
+    result = await model_gateway.embed(chunks)
+    for index, (chunk_text, embedding) in enumerate(zip(chunks, result.embeddings, strict=False)):
         await store.upsert(
-            f"{source_id}#{index}", embedding, chunk_text, {**metadata, "source_id": source_id}
+            f"{source_id}#{index}",
+            embedding,
+            chunk_text,
+            {
+                **metadata,
+                "source_id": source_id,
+                # Which embedding space this vector lives in: a model change is a re-index.
+                "embedding_model": result.embedding_model,
+            },
         )
     return min(len(chunks), len(result.embeddings))

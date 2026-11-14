@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Multi-stage, non-root runtime for air-rag. No model bake-in — embeddings go
-# to air-llm; no vector-store artifact either, in this Phase-0 in-memory build.
+# to air-model-gateway; no vector-store artifact either, in this Phase-0 in-memory build.
 
 FROM python:3.12-slim AS build
 WORKDIR /app

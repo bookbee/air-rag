@@ -15,7 +15,7 @@ that need a RAG lookup (a product-recommendation agent, say) call the same
 endpoint the same way — air-rag has one contract, two kinds of caller.
 
 ```text
-air-platform  ──POST /v1/retrieve──▶  air-rag  ──embed──▶  air-llm
+air-platform  ──POST /v1/retrieve──▶  air-rag  ──embed──▶  air-model-gateway
 air-tools     ──POST /v1/retrieve──▶     │
                                           └──search──▶  vector store
                                                           (in-memory, Phase 0)
@@ -44,12 +44,15 @@ curl -s -X POST localhost:8087/v1/retrieve \
 Against an empty index (nothing ingested yet) this returns an empty
 `citations` list — the honest answer, not an error.
 
-**air-llm is required.** Without it `/v1/ready` is a 503 naming it as the
-cause — no query can be embedded without a model. The service still boots
-and serves `/v1/health` regardless.
+**air-model-gateway is required.** Every embedding goes through its
+`POST /v1/embed` with the published model `local-768-v1` (768 dimensions), the
+index's identity. `/v1/ready` is a 503 naming the cause unless the gateway
+grants this service that model, reports those dimensions, and the provider
+behind it is answering — no query can be embedded otherwise. The service still
+boots and serves `/v1/health` regardless.
 
 ```bash
-cd ../air-llm && make up
+cd ../air-model-gateway && make up    # needs `ollama pull nomic-embed-text`
 ```
 
 `make check` runs ruff, mypy (strict) and the tests.
