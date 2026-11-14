@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from air_rag.retrieval.memory import InMemoryVectorStore
+from air_rag_service.retrieval.memory import InMemoryVectorStore
 
 
 async def test_search_ranks_the_closer_vector_first() -> None:

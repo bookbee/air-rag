@@ -14,7 +14,7 @@ from typing import Any, Final, TextIO
 import orjson
 import structlog
 
-from air_rag.config import Settings
+from air_rag_service.config import Settings
 
 __all__ = ["bind_request_context", "clear_request_context", "configure_logging", "get_logger"]
 

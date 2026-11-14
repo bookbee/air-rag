@@ -1,8 +1,8 @@
-# air-rag — this service, and nothing else.
+# air-rag-service — this service, and nothing else.
 #
 # Joins the platform's shared `air-net` network (owned by
 # air-infrastructure-service) as its default network, so sibling containers
-# reach this service as http://air-rag:8080. air-rag needs nothing *on* air-net
+# reach this service as http://air-rag-service:8080. air-rag-service needs nothing *on* air-net
 # in Phase 0; its one real dependency, air-model-gateway, is never on air-net
 # and is reached over the host (host.docker.internal), like the other services
 # do it.
@@ -15,44 +15,46 @@
 #   make up                           # here
 #
 # In production none of this applies: DevOps supplies
-# AIR_RAG__MODEL_GATEWAY__BASE_URL and __API_KEY for the cluster's
+# AIR_RAG_SERVICE__MODEL_GATEWAY__BASE_URL and __API_KEY for the cluster's
 # air-model-gateway, and this compose file is not deployed.
-name: air-rag
+name: air-rag-service
 
 services:
-  air-rag:
+  air-rag-service:
     build:
       context: .
       target: runtime
-    image: air-rag:local
+    image: air-rag-service:local
     ports:
       # Host side is 8087, this service's slot in the AIR port map
       # (air-infra/README.md). Container side stays 8080.
-      - "${AIR_RAG_PORT:-8087}:8080"
+      - "${AIR_RAG_SERVICE_PORT:-8087}:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      AIR_RAG__APP__ENV: development
-      AIR_RAG__OBS__LOG_FORMAT: console
-      AIR_RAG__OBS__LOG_LEVEL: INFO
-      AIR_RAG__MODEL_GATEWAY__BASE_URL: http://host.docker.internal:8083
+      AIR_RAG_SERVICE__APP__ENV: development
+      AIR_RAG_SERVICE__OBS__LOG_FORMAT: console
+      AIR_RAG_SERVICE__OBS__LOG_LEVEL: INFO
+      AIR_RAG_SERVICE__MODEL_GATEWAY__BASE_URL: http://host.docker.internal:8083
       # The gateway's local dev token for this service (its .env.example).
-      AIR_RAG__MODEL_GATEWAY__API_KEY: air-rag-dev
+      AIR_RAG_SERVICE__MODEL_GATEWAY__API_KEY: air-rag-dev
       # One known development key, baked in. Raw value: airr_local_dev_key.
-      AIR_RAG__SECURITY__HASH_SALT: air-rag-dev-salt
-      AIR_RAG__SECURITY__API_KEYS_INLINE: >-
+      AIR_RAG_SERVICE__SECURITY__HASH_SALT: air-rag-dev-salt
+      AIR_RAG_SERVICE__SECURITY__API_KEYS_INLINE: >-
         [{"id":"local-dev","name":"Local development",
         "key_hash":"793c2ca4f19409e8a6e26791b2a933d9ee89caa71449eb157691f8735454b082",
         "tenant":"brightcart","scopes":["retrieval:read","admin:read"]}]
-      AIR_RAG__SECURITY__ALLOW_UNAUTHENTICATED: "false"
-      # SIT: `AIR_RAG_SEED_DIR=/app/sit/corpus make up` ingests the mounted
+      AIR_RAG_SERVICE__SECURITY__ALLOW_UNAUTHENTICATED: "false"
+      # SIT: `AIR_RAG_SERVICE_SEED_DIR=/app/sit/corpus make up` ingests the mounted
       # corpus at boot. Unset (the default) leaves the index empty.
-      AIR_RAG__INGESTION__SEED_DIR: ${AIR_RAG_SEED_DIR:-}
+      AIR_RAG_SERVICE__INGESTION__SEED_DIR: ${AIR_RAG_SERVICE_SEED_DIR:-}
     volumes:
       - ./sit/corpus:/app/sit/corpus:ro
     networks:
       default:
-        aliases: ["air-rag"]
+        # `air-rag` is the pre-rename name, kept so existing callers keep
+        # resolving; drop it once nothing uses http://air-rag:8080.
+        aliases: ["air-rag-service", "air-rag"]
     restart: unless-stopped
 
 networks:

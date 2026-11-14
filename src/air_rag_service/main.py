@@ -15,25 +15,25 @@ import orjson
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from air_rag import __version__
-from air_rag.api.deps import STATE_ATTR, AppState
-from air_rag.api.errors import install_error_handlers
-from air_rag.api.middleware import install_middleware
-from air_rag.api.v1.router import api_router
-from air_rag.api.v1.system import build_metrics_router
-from air_rag.clients.model_gateway import ModelGatewayClient
-from air_rag.config import Settings, get_settings
-from air_rag.ingestion.base import FixedSizeChunker
-from air_rag.ingestion.seed import seed_store
-from air_rag.observability.logging import configure_logging, get_logger
-from air_rag.retrieval.memory import InMemoryVectorStore
-from air_rag.security.api_keys import ApiKeyStore
+from air_rag_service import __version__
+from air_rag_service.api.deps import STATE_ATTR, AppState
+from air_rag_service.api.errors import install_error_handlers
+from air_rag_service.api.middleware import install_middleware
+from air_rag_service.api.v1.router import api_router
+from air_rag_service.api.v1.system import build_metrics_router
+from air_rag_service.clients.model_gateway import ModelGatewayClient
+from air_rag_service.config import Settings, get_settings
+from air_rag_service.ingestion.base import FixedSizeChunker
+from air_rag_service.ingestion.seed import seed_store
+from air_rag_service.observability.logging import configure_logging, get_logger
+from air_rag_service.retrieval.memory import InMemoryVectorStore
+from air_rag_service.security.api_keys import ApiKeyStore
 
 __all__ = ["OrjsonResponse", "app", "create_app"]
 
 _log = get_logger(__name__)
 
-_TITLE: Final[str] = "AIR RAG"
+_TITLE: Final[str] = "AIR RAG Service"
 _DESCRIPTION: Final[str] = """
 Ingestion, indexing and retrieval for the AIR platform.
 
@@ -59,6 +59,12 @@ def _build_lifespan(state: AppState) -> Any:
                 chunker=FixedSizeChunker(size=ingestion.chunk_size),
                 model_gateway=state.model_gateway,
                 store=state.store,
+            )
+        if len(state.store) == 0:
+            _log.warning(
+                "startup.empty_index",
+                seed_dir=str(ingestion.seed_dir) if ingestion.seed_dir else None,
+                detail="every retrieval will return no citations",
             )
         _log.info(
             "startup.complete",

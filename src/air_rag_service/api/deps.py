@@ -7,14 +7,14 @@ from typing import Annotated, Final
 
 from fastapi import Depends, Header, Request
 
-from air_rag.api.errors import InsufficientScopeError, MissingApiKeyError
-from air_rag.api.middleware import KEY_ID_ATTR
-from air_rag.clients.model_gateway import ModelGatewayClient
-from air_rag.config import Settings
-from air_rag.observability.logging import bind_request_context, get_logger
-from air_rag.retrieval.base import VectorStore
-from air_rag.schemas.common import Principal
-from air_rag.security.api_keys import ApiKeyStore
+from air_rag_service.api.errors import InsufficientScopeError, MissingApiKeyError
+from air_rag_service.api.middleware import KEY_ID_ATTR
+from air_rag_service.clients.model_gateway import ModelGatewayClient
+from air_rag_service.config import Settings
+from air_rag_service.observability.logging import bind_request_context, get_logger
+from air_rag_service.retrieval.base import VectorStore
+from air_rag_service.schemas.common import Principal
+from air_rag_service.security.api_keys import ApiKeyStore
 
 __all__ = [
     "AppState",

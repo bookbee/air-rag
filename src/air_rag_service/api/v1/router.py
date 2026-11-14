@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from air_rag.api.v1 import retrieval, system
+from air_rag_service.api.v1 import retrieval, system
 
 api_router = APIRouter()
 api_router.include_router(system.router)

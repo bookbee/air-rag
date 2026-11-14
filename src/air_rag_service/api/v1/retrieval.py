@@ -1,5 +1,5 @@
 """`POST /v1/retrieve` — the call air-platform's GATHER step makes
-(air-platform/docs/01-hld.md §4: "air-rag — retrieval + citations").
+(air-platform/docs/01-hld.md §4: "air-rag-service — retrieval + citations").
 
 Read-only: this route embeds a query and searches; nothing here writes to the
 index. Ingestion is a separate, not-yet-built path (`ingestion/base.py`).
@@ -12,14 +12,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from air_rag.api.deps import AppState, get_app_state, require_scope
-from air_rag.api.errors import DependencyUnavailableError
-from air_rag.clients.model_gateway import ModelGatewayError
-from air_rag.constants import META_STATUS, META_TENANT, SCOPE_RETRIEVAL_READ, DocumentStatus
-from air_rag.observability import metrics
-from air_rag.observability.logging import get_logger
-from air_rag.schemas.common import Principal
-from air_rag.schemas.retrieval import Citation, RetrievalRequest, RetrievalResponse
+from air_rag_service.api.deps import AppState, get_app_state, require_scope
+from air_rag_service.api.errors import DependencyUnavailableError
+from air_rag_service.clients.model_gateway import ModelGatewayError
+from air_rag_service.constants import META_STATUS, META_TENANT, SCOPE_RETRIEVAL_READ, DocumentStatus
+from air_rag_service.observability import metrics
+from air_rag_service.observability.logging import get_logger
+from air_rag_service.schemas.common import Principal
+from air_rag_service.schemas.retrieval import Citation, RetrievalRequest, RetrievalResponse
 
 logger = get_logger(__name__)
 

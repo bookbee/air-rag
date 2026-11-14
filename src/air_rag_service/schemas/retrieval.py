@@ -1,5 +1,5 @@
 """The retrieval contract air-platform's GATHER step calls
-(air-platform/docs/01-hld.md §4: "air-rag — retrieval + citations")."""
+(air-platform/docs/01-hld.md §4: "air-rag-service — retrieval + citations")."""
 
 from __future__ import annotations
 

@@ -9,7 +9,7 @@ import httpx
 import respx
 from fastapi import FastAPI
 
-from air_rag.api.deps import STATE_ATTR
+from air_rag_service.api.deps import STATE_ATTR
 from tests.conftest import (
     DEV_KEY,
     GATEWAY_BASE_URL,

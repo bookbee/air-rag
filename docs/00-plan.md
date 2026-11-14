@@ -1,4 +1,4 @@
-# air-rag — Plan
+# air-rag-service — Plan
 
 **Status:** Phase-0 skeleton · **Owner:** Vikas Roy
 **Source:** Decided alongside `air-platform`'s open design questions
@@ -9,13 +9,13 @@
 
 `air-platform` never retrieves or indexes anything itself (its own non-goal:
 "No retrieval or indexing. Vector stores, chunking and embeddings are
-air-rag's"). Something has to own the ingestion pipeline and the query-time
+air-rag-service's"). Something has to own the ingestion pipeline and the query-time
 search that grounds an answer in real documents and gives it citations.
 
 `shopassist-service`'s `RAGService` (`services/rag.py`,
 `services/data_pipeline.py`) proved the shape working in one process — FAISS
 over real embeddings, ingesting conversations, product descriptions and PDF
-policy documents. air-rag is that shape, externalised as its own service with
+policy documents. air-rag-service is that shape, externalised as its own service with
 its own API, called by both air-platform's GATHER step and any air-tools
 agent that needs a lookup.
 
@@ -33,7 +33,7 @@ agent that needs a lookup.
 
 - **No document parsing.** `FixedSizeChunker` is the naive baseline; PDF/HTML
   parsing is Phase 1, once a real document source exists to parse.
-- **No mutation of any business system.** air-rag only ever reads and writes
+- **No mutation of any business system.** air-rag-service only ever reads and writes
   its own index.
 - **No model hosting.** air-model-gateway (`POST /v1/embed`, `local-768-v1`) is the only embedding path.
 - **No conversation/session state.** Each retrieval call is stateless.
@@ -43,8 +43,8 @@ agent that needs a lookup.
 | Decision | Choice | Rationale |
 | --- | --- | --- |
 | Vector store | In-process (Phase 0), `VectorStore` Protocol (any backend, later) | Same trade-off air-platform's in-memory session store makes; correct for a laptop and tests |
-| Caller shape | One endpoint, two callers (air-platform, air-tools' agents) | Confirmed with the user: agent reasoning lives in air-tools, and a RAG-backed agent calls air-rag the same way air-platform does |
-| Tenancy | The tenant comes from the API key record (required); retrieval filters on it, and a body `tenant` is a 422; archived documents are never returned | Callers can't choose or spoof a tenant; fail closed, with no default tenant. Decided 2026-11-14 so air-orchestrator-service can enable air-rag on multi-tenant deployments |
+| Caller shape | One endpoint, two callers (air-platform, air-tools' agents) | Confirmed with the user: agent reasoning lives in air-tools, and a RAG-backed agent calls air-rag-service the same way air-platform does |
+| Tenancy | The tenant comes from the API key record (required); retrieval filters on it, and a body `tenant` is a 422; archived documents are never returned | Callers can't choose or spoof a tenant; fail closed, with no default tenant. Decided 2026-11-14 so air-orchestrator-service can enable air-rag-service on multi-tenant deployments |
 | Auth | `X-API-Key`, salted-sha256, scopes — no channel concept | Same reasoning as air-tools: one caller shape, not air-platform's customer/business split |
 | Language / runtime | Python 3.12, FastAPI, Pydantic v2 | Matches every other AIR service |
 | Port | **8087** | air-infra/README.md's port map (bumped from 8083 once the model gateway claimed that slot) |

@@ -6,7 +6,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from air_rag.constants import DownstreamService
+from air_rag_service.constants import DownstreamService
 
 
 class Principal(BaseModel):
@@ -49,6 +49,11 @@ class ReadyResponse(BaseModel):
     version: str
     checked_at: datetime
     dependencies: list[DependencyStatus] = Field(default_factory=list)
+    #: Chunks in the index, across tenants. An empty index is a valid state
+    #: (queries honestly return no citations), so it never fails readiness —
+    #: it is reported here and in `warnings` for callers and alerts to see.
+    document_count: int
+    warnings: list[str] = Field(default_factory=list)
 
 
 class CapabilitiesResponse(BaseModel):

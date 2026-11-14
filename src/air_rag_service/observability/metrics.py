@@ -7,7 +7,7 @@ from typing import Final
 
 from prometheus_client import CollectorRegistry, Counter, Histogram, generate_latest
 
-from air_rag.constants import DownstreamService
+from air_rag_service.constants import DownstreamService
 
 __all__ = ["CONTENT_TYPE", "REGISTRY", "record_downstream_call", "record_retrieval", "render"]
 
@@ -18,35 +18,35 @@ CONTENT_TYPE: Final[str] = "text/plain; version=0.0.4; charset=utf-8"
 _RETRIEVAL_BUCKETS: Final[tuple[float, ...]] = (0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0)
 
 _REQUESTS = Counter(
-    "air_rag_requests_total",
+    "air_rag_service_requests_total",
     "HTTP requests, by route template and status.",
     ["endpoint", "status", "key_id"],
     registry=REGISTRY,
 )
 
 _REQUEST_SECONDS = Histogram(
-    "air_rag_request_seconds",
+    "air_rag_service_request_seconds",
     "HTTP request duration.",
     ["endpoint"],
     registry=REGISTRY,
 )
 
 _RETRIEVALS = Counter(
-    "air_rag_retrievals_total",
+    "air_rag_service_retrievals_total",
     "Retrieval calls, by outcome.",
     ["outcome"],
     registry=REGISTRY,
 )
 
 _RETRIEVAL_SECONDS = Histogram(
-    "air_rag_retrieval_seconds",
+    "air_rag_service_retrieval_seconds",
     "Retrieval call duration.",
     buckets=_RETRIEVAL_BUCKETS,
     registry=REGISTRY,
 )
 
 _DOWNSTREAM_CALLS = Counter(
-    "air_rag_downstream_calls_total",
+    "air_rag_service_downstream_calls_total",
     "Calls to other AIR services, by outcome.",
     ["service", "outcome"],
     registry=REGISTRY,

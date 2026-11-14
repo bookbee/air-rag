@@ -10,8 +10,8 @@ import pytest
 import respx
 import structlog
 
-from air_rag.clients.model_gateway import ModelGatewayClient, ModelGatewayError
-from air_rag.config import Settings
+from air_rag_service.clients.model_gateway import ModelGatewayClient, ModelGatewayError
+from air_rag_service.config import Settings
 from tests.conftest import EMBED_DIMS, EMBED_MODEL, embed_response, vector
 
 _GW = "http://gateway:8083"

@@ -9,13 +9,13 @@ import httpx
 import pytest
 import respx
 
-from air_rag.api.deps import STATE_ATTR
-from air_rag.clients.model_gateway import EmbeddingResult, ModelGatewayError
-from air_rag.config import Settings
-from air_rag.ingestion.base import FixedSizeChunker
-from air_rag.ingestion.seed import load_seed_documents, parse_document, seed_store
-from air_rag.main import create_app
-from air_rag.retrieval.memory import InMemoryVectorStore
+from air_rag_service.api.deps import STATE_ATTR
+from air_rag_service.clients.model_gateway import EmbeddingResult, ModelGatewayError
+from air_rag_service.config import Settings
+from air_rag_service.ingestion.base import FixedSizeChunker
+from air_rag_service.ingestion.seed import load_seed_documents, parse_document, seed_store
+from air_rag_service.main import create_app
+from air_rag_service.retrieval.memory import InMemoryVectorStore
 from tests.conftest import GATEWAY_BASE_URL, embed_response, vector
 
 _TENANTED = "---\ntenant: t1\n---\n"

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "air-rag"
+name = "air-rag-service"
 version = "0.1.0"
 description = "AI Ready RAG: ingestion, indexing and retrieval, over a single API."
 readme = "README.md"
@@ -34,13 +34,13 @@ dev = [
 ]
 
 [project.scripts]
-air-rag = "air_rag.__main__:main"
+air-rag-service = "air_rag_service.__main__:main"
 
 [project.urls]
-Repository = "https://github.com/air/air-rag"
+Repository = "https://github.com/bookbee/air-rag-service"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/air_rag"]
+packages = ["src/air_rag_service"]
 
 [tool.ruff]
 line-length = 100

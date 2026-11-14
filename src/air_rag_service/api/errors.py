@@ -15,9 +15,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
 from starlette.responses import Response
 
-from air_rag.constants import HEADER_REQUEST_ID
-from air_rag.observability.logging import get_logger
-from air_rag.schemas.errors import FieldError, ProblemDetail
+from air_rag_service.constants import HEADER_REQUEST_ID
+from air_rag_service.observability.logging import get_logger
+from air_rag_service.schemas.errors import FieldError, ProblemDetail
 
 __all__ = [
     "AppError",

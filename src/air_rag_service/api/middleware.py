@@ -18,11 +18,15 @@ from starlette.datastructures import Headers, MutableHeaders
 from starlette.requests import Request
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from air_rag.api.errors import MalformedRequestError, problem_response
-from air_rag.config import Settings
-from air_rag.constants import HEADER_REQUEST_ID
-from air_rag.observability import metrics
-from air_rag.observability.logging import bind_request_context, clear_request_context, get_logger
+from air_rag_service.api.errors import MalformedRequestError, problem_response
+from air_rag_service.config import Settings
+from air_rag_service.constants import HEADER_REQUEST_ID
+from air_rag_service.observability import metrics
+from air_rag_service.observability.logging import (
+    bind_request_context,
+    clear_request_context,
+    get_logger,
+)
 
 __all__ = ["KEY_ID_ATTR", "install_middleware", "new_request_id", "resolve_request_id"]
 

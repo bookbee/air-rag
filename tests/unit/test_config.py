@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from air_rag.config import Settings
+from air_rag_service.config import Settings
 
 
 def _settings(**overrides: object) -> Settings:
