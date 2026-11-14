@@ -9,7 +9,7 @@ from fastapi import Depends, Header, Request
 
 from air_rag.api.errors import InsufficientScopeError, MissingApiKeyError
 from air_rag.api.middleware import KEY_ID_ATTR
-from air_rag.clients.llm import LlmClient
+from air_rag.clients.model_gateway import ModelGatewayClient
 from air_rag.config import Settings
 from air_rag.observability.logging import bind_request_context, get_logger
 from air_rag.retrieval.base import VectorStore
@@ -32,7 +32,7 @@ STATE_ATTR: Final[str] = "air_state"
 class AppState:
     settings: Settings
     key_store: ApiKeyStore
-    llm: LlmClient
+    model_gateway: ModelGatewayClient
     store: VectorStore
 
 
@@ -54,7 +54,7 @@ async def require_principal(
 
     principal = record.to_principal()
     request.state.__setattr__(KEY_ID_ATTR, principal.key_id)
-    bind_request_context(key_id=principal.key_id)
+    bind_request_context(key_id=principal.key_id, tenant=principal.tenant)
     return principal
 
 

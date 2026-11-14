@@ -17,6 +17,7 @@ from typing import Final, Self
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from air_rag.config import Settings
+from air_rag.constants import TENANT_PATTERN
 from air_rag.observability.logging import get_logger
 from air_rag.schemas.common import Principal
 
@@ -49,6 +50,8 @@ class ApiKeyRecord(BaseModel):
     id: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=128)
     key_hash: str = Field(repr=False)
+    #: Required: a key without a tenant fails startup (fail closed).
+    tenant: str = Field(pattern=TENANT_PATTERN)
     scopes: set[str] = Field(default_factory=set)
     enabled: bool = True
 
@@ -58,7 +61,7 @@ class ApiKeyRecord(BaseModel):
         return value.strip().lower()
 
     def __repr__(self) -> str:
-        return f"ApiKeyRecord(id={self.id!r}, name={self.name!r})"
+        return f"ApiKeyRecord(id={self.id!r}, name={self.name!r}, tenant={self.tenant!r})"
 
     def __str__(self) -> str:
         return self.__repr__()
@@ -67,13 +70,21 @@ class ApiKeyRecord(BaseModel):
         return scope in self.scopes
 
     def to_principal(self) -> Principal:
-        return Principal(key_id=self.id, name=self.name, scopes=frozenset(self.scopes))
+        return Principal(
+            key_id=self.id, name=self.name, tenant=self.tenant, scopes=frozenset(self.scopes)
+        )
 
     @classmethod
-    def anonymous(cls) -> Self:
+    def anonymous(cls, tenant: str) -> Self:
         from air_rag.constants import ALL_SCOPES
 
-        return cls(id=ANONYMOUS_KEY_ID, name="anonymous", key_hash="", scopes=set(ALL_SCOPES))
+        return cls(
+            id=ANONYMOUS_KEY_ID,
+            name="anonymous",
+            key_hash="",
+            tenant=tenant,
+            scopes=set(ALL_SCOPES),
+        )
 
 
 class ApiKeyStore:
@@ -83,7 +94,11 @@ class ApiKeyStore:
         *,
         salt: str,
         allow_unauthenticated: bool = False,
+        anonymous_tenant: str | None = None,
     ) -> None:
+        if allow_unauthenticated and anonymous_tenant is None:
+            raise ValueError("allow_unauthenticated needs an anonymous_tenant")
+        self._anonymous_tenant = anonymous_tenant
         self._salt = salt
         self._allow_unauthenticated = allow_unauthenticated
         self._by_hash: dict[str, ApiKeyRecord] = {}
@@ -121,6 +136,7 @@ class ApiKeyStore:
             records,
             salt=security.hash_salt.get_secret_value(),
             allow_unauthenticated=security.allow_unauthenticated,
+            anonymous_tenant=security.anonymous_tenant,
         )
 
     def lookup(self, raw_key: str | None) -> ApiKeyRecord | None:
@@ -131,8 +147,8 @@ class ApiKeyStore:
                     logger.warning("api_key_disabled", key_id=record.id)
                     return None
                 return record
-        if self._allow_unauthenticated:
-            return ApiKeyRecord.anonymous()
+        if self._allow_unauthenticated and self._anonymous_tenant is not None:
+            return ApiKeyRecord.anonymous(self._anonymous_tenant)
         return None
 
     def _match(self, raw_key: str) -> ApiKeyRecord | None:

@@ -19,8 +19,24 @@ SCOPE_ADMIN_READ: Final[str] = "admin:read"
 
 ALL_SCOPES: Final[frozenset[str]] = frozenset({SCOPE_RETRIEVAL_READ, SCOPE_ADMIN_READ})
 
+#: A tenant id: lowercase slug. Every API key and every indexed document has
+#: exactly one; retrieval only ever searches the caller's key's tenant.
+TENANT_PATTERN: Final[str] = r"^[a-z0-9][a-z0-9-]{0,63}$"
+
+#: Chunk metadata keys retrieval filters on.
+META_TENANT: Final[str] = "tenant"
+META_STATUS: Final[str] = "status"
+
+
+class DocumentStatus(StrEnum):
+    """`archived` documents stay indexed (audit, future as-of lookups) but are
+    never returned by `/v1/retrieve`."""
+
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
 
 class DownstreamService(StrEnum):
     """Services this one calls. Values match repo names, for metric labels."""
 
-    LLM = "air-llm"
+    MODEL_GATEWAY = "air-model-gateway"

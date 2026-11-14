@@ -11,8 +11,8 @@ requires-python = ">=3.12"
 license = { text = "Proprietary" }
 authors = [{ name = "Vikas Roy" }]
 
-# air-llm is a service dependency, reached over HTTP — same precedent air-tools,
-# air-platform and air-classifier follow for it.
+# air-model-gateway is a service dependency, reached over HTTP — the same
+# precedent every AIR service follows for it.
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",

@@ -1,7 +1,7 @@
 """Shared fixtures.
 
 Every test builds its app through `create_app()` with explicit settings.
-`LLM_BASE_URL` is deliberately not localhost, so a probe escaping its stub
+`GATEWAY_BASE_URL` is deliberately not localhost, so a probe escaping its stub
 fails loudly rather than quietly reaching a real service.
 """
 
@@ -23,9 +23,14 @@ from air_rag.main import create_app
 from air_rag.schemas.common import DependencyStatus
 
 TEST_SALT = "test-salt"
-LLM_BASE_URL = "http://air-llm.invalid:8083"
+GATEWAY_BASE_URL = "http://air-model-gateway.invalid:8083"
+GATEWAY_TOKEN = "air-rag-test"
+EMBED_MODEL = "local-768-v1"
+EMBED_DIMS = 768
 DEV_KEY = "airr_test_key"
 NO_SCOPE_KEY = "airr_test_noscope"
+OTHER_TENANT_KEY = "airr_test_other_tenant"
+TENANT = "brightcart"
 
 
 def digest(raw: str, salt: str = TEST_SALT) -> str:
@@ -38,13 +43,22 @@ def key_records() -> list[dict[str, Any]]:
             "id": "dev",
             "name": "Dev test key",
             "key_hash": digest(DEV_KEY),
+            "tenant": TENANT,
             "scopes": [SCOPE_RETRIEVAL_READ, SCOPE_ADMIN_READ],
         },
         {
             "id": "noscope",
             "name": "Scopeless test key",
             "key_hash": digest(NO_SCOPE_KEY),
+            "tenant": TENANT,
             "scopes": [],
+        },
+        {
+            "id": "other",
+            "name": "Other-tenant test key",
+            "key_hash": digest(OTHER_TENANT_KEY),
+            "tenant": "acme",
+            "scopes": [SCOPE_RETRIEVAL_READ],
         },
     ]
 
@@ -54,7 +68,7 @@ def settings() -> Settings:
     return Settings.model_validate(
         {
             "app": {"env": "test", "port": 8087},
-            "llm": {"base_url": LLM_BASE_URL},
+            "model_gateway": {"base_url": GATEWAY_BASE_URL, "api_key": GATEWAY_TOKEN},
             "security": {
                 "hash_salt": TEST_SALT,
                 "api_keys_inline": json.dumps(key_records()),
@@ -78,31 +92,50 @@ async def client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
 
 
 @pytest.fixture
-def reachable_llm(app: FastAPI) -> Iterator[None]:
+def reachable_gateway(app: FastAPI) -> Iterator[None]:
     from air_rag.api.deps import STATE_ATTR
 
     state = getattr(app.state, STATE_ATTR)
 
     async def healthy() -> DependencyStatus:
         return DependencyStatus(
-            service=DownstreamService.LLM, configured=True, reachable=True, latency_ms=1.0
+            service=DownstreamService.MODEL_GATEWAY, configured=True, reachable=True, latency_ms=1.0
         )
 
-    original = state.llm.probe
-    state.llm.probe = healthy  # type: ignore[method-assign]
+    original = state.model_gateway.probe
+    state.model_gateway.probe = healthy  # type: ignore[method-assign]
     try:
         yield
     finally:
-        state.llm.probe = original  # type: ignore[method-assign]
+        state.model_gateway.probe = original  # type: ignore[method-assign]
 
 
 @pytest.fixture
-def unreachable_llm() -> Iterator[None]:
+def unreachable_gateway() -> Iterator[None]:
     with respx.mock:
-        respx.get(f"{LLM_BASE_URL}/v1/ready").mock(
+        respx.get(f"{GATEWAY_BASE_URL}/v1/capabilities").mock(
             side_effect=httpx.ConnectError("connection refused")
         )
         yield
+
+
+def embed_response(vectors: list[list[float]]) -> dict[str, Any]:
+    """A `/v1/embed` body as the gateway sends it."""
+    return {
+        "id": "emb_test",
+        "embedding_model": EMBED_MODEL,
+        "dimensions": len(vectors[0]) if vectors else EMBED_DIMS,
+        "model": "nomic-embed-text",
+        "provider": "ollama",
+        "embeddings": vectors,
+        "usage": {"prompt_tokens": 1, "completion_tokens": 0, "total_tokens": 1},
+        "cost_usd": 0.0,
+    }
+
+
+def vector(*head: float) -> list[float]:
+    """A 768-d vector whose first components are `head`, the rest zero."""
+    return [*head, *([0.0] * (EMBED_DIMS - len(head)))]
 
 
 def auth(key: str) -> dict[str, str]:

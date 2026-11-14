@@ -7,6 +7,7 @@ implementing this Protocol, not a rewrite of `api/v1/retrieval.py`.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
@@ -20,7 +21,14 @@ class VectorHit(BaseModel):
 
 
 class VectorStore(Protocol):
-    async def search(self, embedding: list[float], *, top_k: int) -> list[VectorHit]: ...
+    async def search(
+        self, embedding: list[float], *, top_k: int, where: Mapping[str, str]
+    ) -> list[VectorHit]:
+        """The `top_k` nearest chunks whose metadata equals every `where`
+        pair. Filtering happens before ranking, so a filtered-out chunk
+        never takes a top-k slot. Every backend must honour `where`: it is
+        how tenant isolation is enforced."""
+        ...
 
     async def upsert(
         self, source_id: str, embedding: list[float], text: str, metadata: dict[str, Any]

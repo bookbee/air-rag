@@ -8,7 +8,8 @@ COMPOSE ?= docker compose
 HOST ?= 0.0.0.0
 PORT ?= 8087
 
-SOURCES := src tests
+SOURCES := src tests scripts
+SIT_CORPUS := sit/corpus
 
 .DEFAULT_GOAL := help
 
@@ -20,7 +21,7 @@ help: ## Show this help
 		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo
 	@echo "Overridable: HOST=$(HOST) PORT=$(PORT)"
-	@echo "Needs air-llm on :8083 — see ../air-llm (make up)."
+	@echo "Needs air-model-gateway on :8083 — see ../air-model-gateway (make up)."
 
 # ---- dev inner loop --------------------------------------------------------
 $(PY):
@@ -45,8 +46,16 @@ env: ## Create .env from .env.example, if absent
 	fi
 
 .PHONY: run
-run: ## Run the service with reload (needs air-llm on :8083)
+run: ## Run the service with reload (needs air-model-gateway on :8083)
 	$(UVICORN) air_rag.main:app --reload --host $(HOST) --port $(PORT)
+
+.PHONY: run-sit
+run-sit: ## Run the service seeded with the SIT corpus (sit/corpus)
+	AIR_RAG__INGESTION__SEED_DIR=$(SIT_CORPUS) $(UVICORN) air_rag.main:app --host $(HOST) --port $(PORT)
+
+.PHONY: sit-check
+sit-check: ## Run sit/queries.json against a seeded service on :$(PORT)
+	$(PY) scripts/sit_check.py --base-url http://localhost:$(PORT)
 
 .PHONY: test
 test: ## Run tests
@@ -76,7 +85,7 @@ openapi: ## Write the OpenAPI document to docs/openapi.json
 
 # ---- container ---------------------------------------------------------------
 .PHONY: up
-up: ## Start this service in docker (needs air-llm reachable at host.docker.internal:8083)
+up: ## Start this service in docker (needs air-model-gateway reachable at host.docker.internal:8083)
 	$(COMPOSE) up -d --build
 	@$(MAKE) --no-print-directory status
 
@@ -86,9 +95,9 @@ status: ## Report this service's own readiness
 	@printf 'air-rag: http://localhost:$(PORT)/v1/health\n'
 	@code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$(PORT)/v1/ready 2>/dev/null); \
 	if [ "$$code" = "200" ]; then \
-		printf 'ready:   yes — air-llm reachable\n'; \
+		printf 'ready:   yes — air-model-gateway serving the embedding model\n'; \
 	elif [ "$$code" = "503" ]; then \
-		printf 'ready:   NO (503) — air-llm unreachable. Start it with: cd ../air-llm && make up\n'; \
+		printf 'ready:   NO (503) — see the detail: curl -s localhost:$(PORT)/v1/ready (gateway: cd ../air-model-gateway && make up)\n'; \
 	else \
 		printf 'ready:   could not probe (curl said "%s") — try: make logs\n' "$$code"; \
 	fi

@@ -11,6 +11,7 @@ does, and `main.py`'s construction is the only place that changes.
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from typing import Any
 
 from air_rag.retrieval.base import VectorHit
@@ -36,7 +37,9 @@ class InMemoryVectorStore:
     def __len__(self) -> int:
         return len(self._items)
 
-    async def search(self, embedding: list[float], *, top_k: int) -> list[VectorHit]:
+    async def search(
+        self, embedding: list[float], *, top_k: int, where: Mapping[str, str]
+    ) -> list[VectorHit]:
         scored = [
             VectorHit(
                 source_id=source_id,
@@ -45,6 +48,7 @@ class InMemoryVectorStore:
                 metadata=meta,
             )
             for source_id, (vector, text, meta) in self._items.items()
+            if all(meta.get(key) == value for key, value in where.items())
         ]
         scored.sort(key=lambda hit: hit.score, reverse=True)
         return scored[:top_k]
