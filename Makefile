@@ -114,7 +114,7 @@ infra-check: ## Fail early if air-infra's shared network is not up
 		exit 1; }
 
 .PHONY: up
-up: $(UP_DEPS) ## Start in docker on air-net (INFRA=none: own network; AIR_RAG_SERVICE_SEED_DIR=/app/sit/corpus: seed SIT)
+up: $(UP_DEPS) ## Start in docker on air-net (INFRA=none: own network), seeded from sit/corpus (AIR_RAG_SERVICE_SEED_DIR= for an empty index)
 	$(COMPOSE) $(COMPOSE_FILES) up -d --build
 	@$(MAKE) --no-print-directory status
 

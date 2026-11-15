@@ -87,15 +87,41 @@ document (stores nothing), and a product with a Devanagari name. The dev key
 `airr_local_dev_key` belongs to tenant `brightcart`.
 
 The index lives in memory and the public API is read-only, so the corpus is
-ingested **at startup** when `AIR_RAG_SERVICE__INGESTION__SEED_DIR` is set:
+ingested **at startup** when `AIR_RAG_SERVICE__INGESTION__SEED_DIR` is set.
+In docker that is the default; on the host, `make run` does not seed and
+`make run-sit` does:
 
 ```bash
-make run-sit       # :8087, seeded from sit/corpus (air-model-gateway must be up)
+make up            # docker: seeded from the mounted sit/corpus by default
+make run-sit       # host: :8087, seeded from sit/corpus (air-model-gateway must be up)
 make sit-check     # sit/queries.json: expected top-3 hit per query, plus no
                    # cross-tenant, archived or untenanted citation; non-zero on failure
-
-AIR_RAG_SERVICE_SEED_DIR=/app/sit/corpus make up    # the same, in docker (corpus is mounted)
 ```
+
+### Replacing the seed corpus (DevOps)
+
+The SIT corpus is a **placeholder** default, there so a new developer's
+`make up` or `docker compose up` never starts with an empty index. It is
+dummy data and must not reach a real environment. As the project grows,
+replace it with real seeds:
+
+- **Where the default lives:** `docker-compose.yml` sets
+  `AIR_RAG_SERVICE__INGESTION__SEED_DIR` to
+  `${AIR_RAG_SERVICE_SEED_DIR-/app/sit/corpus}` and mounts `./sit/corpus`
+  read-only at that path. Nothing else defaults it: the image and
+  `config.py` leave seeding off, and production uses neither compose file.
+- **To point at another corpus:** mount it into the container and set
+  `AIR_RAG_SERVICE_SEED_DIR` to the in-container path (or change the default
+  and the volume in `docker-compose.yml`). An empty value,
+  `AIR_RAG_SERVICE_SEED_DIR= make up`, starts with no seeding.
+- **What a seed file needs:** `*.md` / `*.txt` with front matter. `tenant` is
+  required (a document without a valid one is skipped, logged as
+  `seed.skipped`); `status` is `active` or `archived`.
+- **Keep `make sit-check` honest:** `sit/queries.json` expects the SIT corpus,
+  so a different default corpus needs its own query set.
+- **Longer term:** startup seeding re-embeds everything on every boot into an
+  in-memory index. Real document sources and a persistent vector store are
+  on the roadmap in `docs/00-plan.md`; when they land, drop this default.
 
 ## Docker and the shared network
 
@@ -108,8 +134,8 @@ reaches it at `host.docker.internal:8083`.
 ```bash
 cd ../air-infrastructure-service && make up   # air-net (make up fails early without it)
 cd ../air-model-gateway && make up            # embeddings
-make up                                       # air-rag-service on air-net
-AIR_RAG_SERVICE_SEED_DIR=/app/sit/corpus make up      # ...seeded with the SIT corpus
+make up                                       # air-rag-service on air-net, seeded with the SIT corpus
+AIR_RAG_SERVICE_SEED_DIR= make up             # ...with an empty index instead
 make up INFRA=none                            # own network instead (docker-compose.standalone.yml)
 make status | logs | down
 ```
