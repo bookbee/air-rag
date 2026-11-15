@@ -37,7 +37,7 @@ services:
       AIR_RAG_SERVICE__OBS__LOG_LEVEL: INFO
       AIR_RAG_SERVICE__MODEL_GATEWAY__BASE_URL: http://host.docker.internal:8083
       # The gateway's local dev token for this service (its .env.example).
-      AIR_RAG_SERVICE__MODEL_GATEWAY__API_KEY: air-rag-dev
+      AIR_RAG_SERVICE__MODEL_GATEWAY__API_KEY: air-rag-service-dev
       # One known development key, baked in. Raw value: airr_local_dev_key.
       AIR_RAG_SERVICE__SECURITY__HASH_SALT: air-rag-dev-salt
       AIR_RAG_SERVICE__SECURITY__API_KEYS_INLINE: >-
