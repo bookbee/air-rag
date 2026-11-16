@@ -156,3 +156,71 @@ async def test_retrieve_rejects_unknown_fields_such_as_a_body_tenant(
 
     assert response.status_code == httpx.codes.UNPROCESSABLE_ENTITY
     assert response.json()["errors"][0]["field"] == "tenant"
+
+
+# ── SIT RG-001..004 ───────────────────────────────────────────────────────────
+
+
+async def test_malformed_json_is_a_400_not_a_field_error(client: httpx.AsyncClient) -> None:
+    response = await client.post(
+        "/v1/retrieve",
+        content=b'{"query":',
+        headers={**auth(DEV_KEY), "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == httpx.codes.BAD_REQUEST
+    assert response.json()["type"].endswith("/malformed-request")
+
+
+async def test_a_bad_body_without_a_key_is_a_401_first(client: httpx.AsyncClient) -> None:
+    malformed = await client.post(
+        "/v1/retrieve", content=b'{"query":', headers={"Content-Type": "application/json"}
+    )
+    invalid = await client.post("/v1/retrieve", json={"top_k": 0})
+
+    assert malformed.status_code == httpx.codes.UNAUTHORIZED
+    assert invalid.status_code == httpx.codes.UNAUTHORIZED
+
+
+async def test_top_k_is_a_strict_integer(client: httpx.AsyncClient) -> None:
+    for top_k in (True, "5", 5.0):
+        response = await client.post(
+            "/v1/retrieve", json={"query": "return policy", "top_k": top_k}, headers=auth(DEV_KEY)
+        )
+
+        assert response.status_code == httpx.codes.UNPROCESSABLE_ENTITY, top_k
+        assert response.json()["errors"][0]["field"] == "top_k"
+
+
+async def test_a_blank_query_is_refused(client: httpx.AsyncClient) -> None:
+    response = await client.post("/v1/retrieve", json={"query": " \n\t "}, headers=auth(DEV_KEY))
+
+    assert response.status_code == httpx.codes.UNPROCESSABLE_ENTITY
+    assert response.json()["errors"][0]["field"] == "query"
+
+
+async def test_user_id_is_capped(client: httpx.AsyncClient) -> None:
+    response = await client.post(
+        "/v1/retrieve", json={"query": "return policy", "user_id": "u" * 257}, headers=auth(DEV_KEY)
+    )
+
+    assert response.status_code == httpx.codes.UNPROCESSABLE_ENTITY
+    assert response.json()["errors"][0]["field"] == "user_id"
+
+
+@respx.mock
+async def test_chunks_below_the_relevance_floor_are_not_returned(
+    app: FastAPI, client: httpx.AsyncClient
+) -> None:
+    """One chunk points the query's way and one is orthogonal to it: the
+    second is noise at any `top_k`, and an empty list is an honest answer."""
+    store = getattr(app.state, STATE_ATTR).store
+    await store.upsert("near#0", vector(1.0, 0.0), "about returns", _meta())
+    await store.upsert("far#0", vector(0.0, 1.0), "about something else", _meta())
+    _mock_embed(1.0, 0.1)
+
+    response = await client.post(
+        "/v1/retrieve", json={"query": "return policy", "top_k": 5}, headers=auth(DEV_KEY)
+    )
+
+    assert [c["source_id"] for c in response.json()["citations"]] == ["near#0"]

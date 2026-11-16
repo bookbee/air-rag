@@ -180,11 +180,44 @@ async def _app_error_handler(request: Request, exc: Exception) -> Response:
 
 
 async def _validation_error_handler(request: Request, exc: Exception) -> Response:
+    """Body validation runs before a route's dependencies, so without the first
+    check a caller with no key would learn about its body before being asked
+    who it is. Authentication comes first: a keyed route answers a bad body
+    with the same 401 `require_principal` would have given (SIT RG-001)."""
     assert isinstance(exc, RequestValidationError)
+    if _requires_principal(request) and not _has_valid_key(request):
+        return await _app_error_handler(
+            request, MissingApiKeyError("A valid X-API-Key header is required.")
+        )
+    if any(raw.get("type") == "json_invalid" for raw in exc.errors()):
+        # Not one field's error: the body could not be read at all.
+        return await _app_error_handler(
+            request, MalformedRequestError("The request body is not valid JSON.")
+        )
     field_errors = [_as_field_error(raw) for raw in exc.errors()]
     first = field_errors[0] if field_errors else None
     detail = f"{first.field}: {first.message}" if first and first.message else None
     return await _app_error_handler(request, ValidationError(detail, errors=field_errors))
+
+
+def _requires_principal(request: Request) -> bool:
+    """Whether the matched route depends, at any depth, on `require_principal`."""
+    from air_rag_service.api.deps import require_principal  # deps imports this module
+
+    dependant = getattr(request.scope.get("route"), "dependant", None)
+    pending = [dependant] if dependant is not None else []
+    while pending:
+        current = pending.pop()
+        if current.call is require_principal:
+            return True
+        pending.extend(current.dependencies)
+    return False
+
+
+def _has_valid_key(request: Request) -> bool:
+    from air_rag_service.api.deps import get_app_state  # deps imports this module
+
+    return get_app_state(request).key_store.lookup(request.headers.get("X-API-Key")) is not None
 
 
 async def _http_exception_handler(request: Request, exc: Exception) -> Response:

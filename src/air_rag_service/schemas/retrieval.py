@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
 
 
 class RetrievalRequest(BaseModel):
@@ -14,10 +14,22 @@ class RetrievalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     query: str = Field(min_length=1, max_length=4000)
-    top_k: int = Field(default=5, ge=1, le=50)
+    #: Strict: `true`, `"5"` and `5.0` are a 422, not silently 1 or 5 (SIT RG-002).
+    top_k: StrictInt = Field(default=5, ge=1, le=50)
     #: Tenant/user scoping for a future multi-tenant index — accepted now so
-    #: the wire contract doesn't change when that lands.
-    user_id: str | None = None
+    #: the wire contract doesn't change when that lands. Capped like every
+    #: other caller-supplied identifier, since it is not used yet and must
+    #: not become a free megabyte per request (SIT RG-003).
+    user_id: str | None = Field(default=None, max_length=256)
+
+    @field_validator("query")
+    @classmethod
+    def _query_has_content(cls, value: str) -> str:
+        """A blank query embeds to a vector like any other and comes back with
+        match-level scores for nothing (SIT RG-003), so it is refused here."""
+        if not value.strip():
+            raise ValueError("must contain more than whitespace")
+        return value
 
 
 class Citation(BaseModel):

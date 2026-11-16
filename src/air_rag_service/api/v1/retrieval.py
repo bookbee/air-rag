@@ -57,6 +57,9 @@ async def retrieve(
         top_k=request.top_k,
         where={META_TENANT: principal.tenant, META_STATUS: DocumentStatus.ACTIVE},
     )
+    # Below the floor a chunk is noise, not a weaker match (SIT RG-004).
+    floor = state.settings.retrieval.min_score
+    hits = [hit for hit in hits if hit.score >= floor]
     metrics.record_retrieval(
         outcome="hit" if hits else "empty", duration_s=time.perf_counter() - started
     )

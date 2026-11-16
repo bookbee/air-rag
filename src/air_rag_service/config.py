@@ -63,6 +63,14 @@ class RetrievalSettings(BaseModel):
     for a laptop and tests, gone on restart. A real backend is Phase 1."""
 
     default_top_k: int = Field(default=5, ge=1, le=50)
+    #: Relevance floor: a chunk scoring below this is not returned, so a query
+    #: about nothing in the index gets fewer citations, or none, instead of a
+    #: full `top_k` of noise (SIT RG-004). Calibrated for `local-768-v1` on the
+    #: SIT corpus, where the weakest correct top hit scores 0.545 and unrelated
+    #: text ("aaaa", SQL, small talk) tops out between 0.40 and 0.50. It is a
+    #: cosine threshold, so recalibrate it with the embedding model; 0 turns
+    #: it off.
+    min_score: float = Field(default=0.5, ge=0.0, le=1.0)
 
 
 # ── Ingestion ─────────────────────────────────────────────────────────────────
