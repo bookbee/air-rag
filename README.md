@@ -1,25 +1,48 @@
 # air-rag-service
 
-Ingestion, indexing and retrieval for the AIR platform.
+Document search for the AIR platform: given a question, it returns the passages of
+the knowledge base that are most related to it, each with its source, so that an
+answer can be grounded in real documents and cite them. This pattern is called
+retrieval-augmented generation (RAG).
 
-> **Status: Phase-0 skeleton.** Structure, config, auth, health/ready/capabilities,
-> a real in-process vector store, and a working chunk → embed → index pipeline
-> are real. No real document source is ingested yet — the pipeline has been
-> exercised against synthetic text only. See [`docs/00-plan.md`](docs/00-plan.md).
+> **Part of the AIR platform.** New here? Start with the
+> [platform overview](../air-web-console/docs/platform/01-overview.md), the
+> [concepts page](../air-web-console/docs/platform/02-concepts.md) (embeddings,
+> vector store, chunks, citations) and the
+> [local setup guide](../air-web-console/docs/platform/03-local-setup.md) in
+> air-web-console.
+
+> **Status (2026-11-16): a working first phase, not yet production-shaped.**
+> Real and tested: the `POST /v1/retrieve` contract, tenant isolation by API key,
+> strict validation, a relevance floor, health/ready/capabilities, and a chunk →
+> embed → index pipeline that seeds a 27-document sample corpus at start-up. Verified
+> end to end with air-orchestrator-service (cited answers).
+> **Not built:** a persistent vector store (the index lives in process memory and is
+> rebuilt on every start), any route or job that ingests real documents, and
+> reranking. [`docs/00-plan.md`](docs/00-plan.md) has the goals and the phased roadmap.
 
 ## Where it sits
 
-`air-platform`'s GATHER step calls `POST /v1/retrieve` for grounding and
-citations (`air-platform/docs/01-hld.md` §4). Domain agents in `air-tools`
-that need a RAG lookup (a product-recommendation agent, say) call the same
-endpoint the same way — air-rag-service has one contract, two kinds of caller.
+air-orchestrator-service's `gather` stage calls `POST /v1/retrieve` for passages and
+their sources (its spec 0011). That is the only caller today; anything else that
+needs a document lookup would call the same endpoint the same way.
 
 ```text
-air-platform  ──POST /v1/retrieve──▶  air-rag-service  ──embed──▶  air-model-gateway
-air-tools     ──POST /v1/retrieve──▶     │
-                                          └──search──▶  vector store
-                                                          (in-memory, Phase 0)
+air-orchestrator-service ──POST /v1/retrieve──▶ air-rag-service ──POST /v1/embed──▶ air-model-gateway
+                                                     │                              (model `local-768-v1`)
+                                                     └──search──▶ vector store
+                                                                  (in process memory)
 ```
+
+How a search works:
+
+1. At start-up, each document in the seed directory is split into chunks of about
+   800 characters, and each chunk is turned into a 768-number vector (an *embedding*)
+   by air-model-gateway. The vectors are kept in memory.
+2. A query is embedded the same way.
+3. The chunks whose vectors are closest to the query's (cosine similarity) are
+   returned as `citations`, filtered to the caller's tenant and to active documents,
+   and dropped if they score below `RETRIEVAL__MIN_SCORE` (0.5).
 
 **Tenant-scoped by the API key.** Every key record carries a `tenant`, and
 `POST /v1/retrieve` searches only that tenant's documents. The tenant is
@@ -67,9 +90,9 @@ cd ../air-model-gateway && make up    # needs `ollama pull nomic-embed-text`
 
 ## The vector store
 
-Phase 0 ships `retrieval/memory.py`: brute-force cosine similarity, no
+This phase ships `retrieval/memory.py`: brute-force cosine similarity, no
 dependency beyond the standard library. Correct for a laptop and for tests,
-gone on restart — the same trade-off `air-platform`'s in-memory session
+gone on restart: the same trade-off air-orchestrator-service's in-memory session
 store makes. A real backend implements `retrieval/base.py`'s `VectorStore`
 Protocol; `main.py`'s construction is the only place that changes.
 
@@ -143,3 +166,45 @@ make status | logs | down
 If the gateway can't embed at boot, seeding stops with a `seed.failed` log
 line and the service still starts. `/v1/capabilities`' `document_count`
 shows how many chunks made it in.
+
+## Deployment notes
+
+```bash
+export IMAGE_REPOSITORY=<region>-docker.pkg.dev/<project>/air/air-rag-service
+make image-push                                   # linux/amd64, tagged with this commit
+make deploy DEPLOY_ENV=uat KUBE_CONTEXT=<context> GCP_PROJECT=<project>
+make deploy-smoke DEPLOY_ENV=uat KUBE_CONTEXT=<context>
+```
+
+This repository owns its `Dockerfile` and image. The Helm chart, the values for UAT
+and production, the Terraform and the deploy scripts are in
+[air-infrastructure-service](../air-infrastructure-service/gke/README.md) (`gke/`),
+where DevOps keeps them for every core service; the targets above call into that
+checkout (`INFRA_DIR`). Its [runbook](../air-infrastructure-service/docs/03-gke-runbook.md)
+is the procedure, and `make deploy-render SAMPLE=1` prints what would be applied.
+**If this service's start command, port or user changes, update its values files
+there** (`gke/values/*/air-rag-service.yaml`).
+
+There is no CI workflow and no deploy pipeline in this repository yet. The points that
+matter most for a deployment:
+
+- **The container listens on 8080** and runs as uid 10001. Liveness is
+  `/v1/health`; readiness is `/v1/ready`, which is 503 until air-model-gateway can
+  embed with `local-768-v1`.
+- **The index is in memory.** Every replica builds its own copy at start-up from
+  `AIR_RAG_SERVICE__INGESTION__SEED_DIR`, so start-up time grows with the corpus, and
+  the gateway must be able to embed before the pod starts or the index is empty
+  (`document_count` on `/v1/ready` shows it).
+- **The gateway must serve the embedding model.** `local-768-v1` is a local model
+  (`nomic-embed-text`), so the cluster needs a model server for it even when all chat
+  traffic uses cloud models.
+- **Every key in `.env.example` is a development value.** A deployment needs its own
+  `HASH_SALT` and key records (one per tenant), and `APP__ENV=production`.
+
+## More
+
+- [`docs/00-plan.md`](docs/00-plan.md): goals, non-goals, decisions and the roadmap.
+- [`docs/openapi.json`](docs/openapi.json): the API contract (`make openapi` regenerates it).
+- [`CLAUDE.md`](CLAUDE.md): the compact engineering guide, also used by AI coding assistants.
+- Bugs found in this service are tracked in
+  [`air-web-console/bugs/rag/`](../air-web-console/bugs/rag/README.md).
